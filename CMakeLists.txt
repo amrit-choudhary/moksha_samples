@@ -28,6 +28,7 @@ add_subdirectory(shared)
 add_subdirectory(server)
 add_subdirectory(ui_demo)
 add_subdirectory(net_test)
+add_subdirectory(evolution)
 
 if(SAMPLES_BUILD_TESTS)
     add_subdirectory(tests)

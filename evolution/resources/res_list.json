@@ -1,0 +1,9 @@
+{
+    "copy": [
+        "config/settings.ini",
+        "texture_data/atlas_tileset_evolution.json"
+    ],
+    "textures": [
+        "textures/world/tileset_evolution.png"
+    ]
+}

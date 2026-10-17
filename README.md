@@ -8,6 +8,7 @@ harness.
 |---|---|---|
 | `ui_demo/` | `Sample_UIDemo` | UI widgets (panels, labels, images, a button), text, input |
 | `net_test/` | `Sample_NetTest` | Networking against `Samples_Server`: connect, ping, synced scores, high score, timed quiz |
+| `evolution/` | `Sample_Evolution` | Environment simulation: Perlin-noise terrain, thousands of creatures as instanced atlas sprites, physics colliders; WASD moves the camera |
 
 Also built: `Samples_Server` (`server/`, the net test's server, with a SQLite high-score table) and
 `Samples_Tests` (`tests/`). `shared/` holds the code both sides use (the net test's messages).
