@@ -25,3 +25,12 @@ the engine's test harness: an engine change is checked by running the samples ag
 - An engine API change is made in the engine, and the samples are fixed in the same session. The user
   pushes the engine first, then bumps `MOKSHA_PIN` and pushes the samples.
 - The engine's conventions (above) apply here too.
+
+## Raspberry Pi
+- Server-only build: `cmake --preset pinned -DMOKSHA_BUILD_CLIENT=OFF -DCMAKE_BUILD_TYPE=Release`, then build
+  `Samples_Server`. Headless bots: configure with the client on (Linux builds only the headless client) and
+  build `Sample_NetTest_Headless`; `bash tools/load_test.sh <bot exe> <server-ip> [bots] [seconds]`. Verified:
+  20 bots × 60 s on a Pi 4B.
+- Open: the Pi's server dashboard (me_server_manager, see the village_shop repo's CLAUDE.md) still runs the
+  old server; point its `config.json` at `build/server/Samples_Server` when wanted. A small sample `dlc/`
+  for the engine's content server doesn't exist yet.
