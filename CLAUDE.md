@@ -8,6 +8,9 @@ the engine's test harness: an engine change is checked by running the samples ag
 ## Layout
 - `<sample>/`: `CMakeLists.txt` (`moksha_add_game(Sample_<Name> ...)`), `game_main.cpp` (`MOKSHA_GAME`),
   `game/`, `scene/`, `resources/` (`res_list.json`, `config/settings.ini`, the sample's own assets).
+- `shared/`: code the samples and the server both use (`Samples_Shared`), e.g. the net test's messages,
+  whose verbs start at `GameProtocol::FIRST_GAME_VERB`. `server/`: `Samples_Server` (`moksha_add_server`), an
+  `IGameServerListener` per sample that needs one. `tests/`: `Samples_Tests`.
 - Includes are qualified from the repo root: `#include "ui_demo/scene/scene_ui_demo.h"`; engine headers
   as `"moksha/client/..."`. Samples never include each other.
 - Sample code lives in `namespace Samples`, never in the engine's `ME`.

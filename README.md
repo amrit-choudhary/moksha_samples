@@ -7,6 +7,12 @@ harness.
 | Sample | Executable | Shows |
 |---|---|---|
 | `ui_demo/` | `Sample_UIDemo` | UI widgets (panels, labels, images, a button), text, input |
+| `net_test/` | `Sample_NetTest` | Networking against `Samples_Server`: connect, ping, synced scores, high score, timed quiz |
+
+Also built: `Samples_Server` (`server/`, the net test's server, with a SQLite high-score table) and
+`Samples_Tests` (`tests/`). `shared/` holds the code both sides use (the net test's messages).
+
+To try the net test, start `Samples_Server`, then one or two `Sample_NetTest` windows.
 
 ## Building
 Requires CMake 3.31+ and a C++20 compiler. On Windows the cook also needs `dxc` and `texconv` on `PATH`.

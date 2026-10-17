@@ -21,4 +21,14 @@ FetchContent_Declare(moksha
     GIT_TAG ${MOKSHA_PIN})
 FetchContent_MakeAvailable(moksha)
 
+# Samples' own unit tests (Samples_Tests).
+option(SAMPLES_BUILD_TESTS "Build the samples' unit tests" ON)
+
+add_subdirectory(shared)
+add_subdirectory(server)
 add_subdirectory(ui_demo)
+add_subdirectory(net_test)
+
+if(SAMPLES_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
