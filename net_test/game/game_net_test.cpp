@@ -12,7 +12,7 @@
 
 using Samples::NetProtocol::Verb;
 
-Samples::GameNetTest::GameNetTest() : Game() {}
+Samples::GameNetTest::GameNetTest(double inDurationSeconds) : Game(), durationSeconds(inDurationSeconds) {}
 
 Samples::GameNetTest::~GameNetTest() {}
 
@@ -39,7 +39,19 @@ void Samples::GameNetTest::Init(ME::Engine& inEngine) {
 
     gameClient->SendConnectRequest();
 
-    ME::Log("Net Test Game Start!");
+    isBot = engine->IsHeadless();
+    if (isBot) {
+        botScoreTimer = engine->timers->SetInterval(
+            ME::Delegate::Make<GameNetTest, &GameNetTest::OnBotScoreTimer>(this), kBotScoreIntervalSeconds);
+        botChatTimer = engine->timers->SetInterval(ME::Delegate::Make<GameNetTest, &GameNetTest::OnBotChatTimer>(this),
+                                                   kBotChatIntervalSeconds);
+    }
+    if (durationSeconds > 0.0) {
+        durationTimer = engine->timers->SetTimeout(ME::Delegate::Make<GameNetTest, &GameNetTest::OnDurationTimer>(this),
+                                                   durationSeconds);
+    }
+
+    ME::Log("Net Test Game Start!", isBot ? " (bot)" : "");
 }
 
 void Samples::GameNetTest::Start() {
@@ -54,6 +66,7 @@ void Samples::GameNetTest::Update(double deltaTime) {
         pingTimer -= kPingIntervalSeconds;
         engine->gameClient->SendPing();
         ++pingsSent;
+        pingSentAt = engine->time->GetTimeSinceStartup();
         RefreshPingLabel();
     }
 }
@@ -90,9 +103,20 @@ void Samples::GameNetTest::OnConnected() {
     char buf[32];
     snprintf(buf, sizeof(buf), "Connected as Client %d", engine->gameClient->GetClientID());
     sceneUINetTest->GetStatusLabel()->SetText(buf);
+    if (isBot) {
+        ME::Log(buf);
+    }
 }
 
 void Samples::GameNetTest::OnPong() {
+    if (pingSentAt >= 0.0) {
+        const double rtt = engine->time->GetTimeSinceStartup() - pingSentAt;
+        rttMin = (rttCount == 0 || rtt < rttMin) ? rtt : rttMin;
+        rttMax = rtt > rttMax ? rtt : rttMax;
+        rttSum += rtt;
+        ++rttCount;
+        pingSentAt = -1.0;
+    }
     ++pongsReceived;
     RefreshPingLabel();
 }
@@ -140,6 +164,14 @@ void Samples::GameNetTest::OnQuizQuestion(const NetProtocol::QuizQuestion& quest
     }
     SetAnswerButtonsVisible(true);
 
+    // The bot answers at once, with the correct option.
+    if (isBot) {
+        const int correct = question.op == '+' ? question.lhs + question.rhs : question.lhs - question.rhs;
+        PickAnswer(question.options[0] == correct ? 0 : 1);
+        ++quizzesAnswered;
+        return;
+    }
+
     // A question arriving early replaces the open one, so its timeout must not close the new one.
     engine->timers->Clear(answerTimer);
     answerTimer = engine->timers->SetTimeout(ME::Delegate::Make<GameNetTest, &GameNetTest::OnAnswerTimeout>(this),
@@ -186,9 +218,39 @@ void Samples::GameNetTest::RefreshPingLabel() {
     sceneUINetTest->GetPingLabel()->SetText(buf);
 }
 
+void Samples::GameNetTest::OnBotScoreTimer() {
+    OnScoreButtonClicked();
+}
+
+void Samples::GameNetTest::OnBotChatTimer() {
+    char message[32];
+    snprintf(message, sizeof(message), "hello from bot %d", engine->gameClient->GetClientID());
+    engine->gameClient->SendChat(message);
+    ++chatsSent;
+}
+
+void Samples::GameNetTest::OnDurationTimer() {
+    LogBotSummary();
+    engine->Quit();
+}
+
+void Samples::GameNetTest::LogBotSummary() {
+    const double rttAvg = rttCount > 0 ? rttSum / rttCount : 0.0;
+    char buf[224];
+    snprintf(buf, sizeof(buf),
+             "BOT SUMMARY client=%d connected=%d pings=%u pongs=%u rtt_ms(min/avg/max)=%.1f/%.1f/%.1f scores=%u "
+             "chats=%u quizzes=%u",
+             engine->gameClient->GetClientID(), engine->gameClient->IsConnected() ? 1 : 0, pingsSent, pongsReceived,
+             rttMin * 1000.0, rttAvg * 1000.0, rttMax * 1000.0, score, chatsSent, quizzesAnswered);
+    ME::Log(buf);
+}
+
 void Samples::GameNetTest::End() {
     // Before the UI goes away: the timeout callback writes to its widgets, and the client must stop calling us.
     engine->timers->Clear(answerTimer);
+    engine->timers->Clear(botScoreTimer);
+    engine->timers->Clear(botChatTimer);
+    engine->timers->Clear(durationTimer);
     engine->gameClient->SetListener(nullptr);
 
     // sceneUINetTest and uiScene alias the same object - deleting uiScene destroys the widgets

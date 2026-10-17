@@ -7,6 +7,9 @@
  * SceneUINetTest). Not shipped gameplay - a manual test harness for the network layer, same role
  * as GameUIDemo for the UI subsystem. The score and quiz messages are this sample's own
  * (shared/net/samples_protocol.h); it receives them as the GameClient's listener.
+ *
+ * Headless (Sample_NetTest_Headless) it runs as a bot for load tests: it clicks Score, chats and answers
+ * every quiz by itself, measures ping round trips, and after durationSeconds logs a summary and quits.
  */
 
 #include <cstdint>
@@ -21,7 +24,8 @@ namespace Samples {
 
 class GameNetTest : public ME::Game, public ME::IGameClientListener {
    public:
-    GameNetTest();
+    // durationSeconds > 0 quits after that long (logging the bot summary first); 0 runs until closed.
+    explicit GameNetTest(double inDurationSeconds = 0.0);
     ~GameNetTest();
 
     virtual void Init(ME::Engine& inEngine) override;
@@ -38,6 +42,11 @@ class GameNetTest : public ME::Game, public ME::IGameClientListener {
     void OnAnswerTimeout();
     void OnAnswer0Clicked();
     void OnAnswer1Clicked();
+
+    // Bot timers (headless only) and the --duration timer.
+    void OnBotScoreTimer();
+    void OnBotChatTimer();
+    void OnDurationTimer();
 
    private:
     void OnScoreReceived(uint32_t opponentScore);
@@ -68,6 +77,27 @@ class GameNetTest : public ME::Game, public ME::IGameClientListener {
     char questionText[48] = {};
 
     static constexpr double kAnswerWindowSeconds = 3.0;
+
+    void LogBotSummary();
+
+    // Bot mode: true when headless.
+    bool isBot = false;
+    double durationSeconds = 0.0;
+    ME::Time::TimerHandle durationTimer;
+    ME::Time::TimerHandle botScoreTimer;
+    ME::Time::TimerHandle botChatTimer;
+
+    static constexpr double kBotScoreIntervalSeconds = 1.0;
+    static constexpr double kBotChatIntervalSeconds = 10.0;
+
+    // Ping round trips: one ping is in flight at a time (sent every kPingIntervalSeconds).
+    double pingSentAt = -1.0;
+    double rttMin = 0.0;
+    double rttMax = 0.0;
+    double rttSum = 0.0;
+    uint32_t rttCount = 0;
+    uint32_t chatsSent = 0;
+    uint32_t quizzesAnswered = 0;
 };
 
 }  // namespace Samples

@@ -12,7 +12,19 @@ harness.
 Also built: `Samples_Server` (`server/`, the net test's server, with a SQLite high-score table) and
 `Samples_Tests` (`tests/`). `shared/` holds the code both sides use (the net test's messages).
 
-To try the net test, start `Samples_Server`, then one or two `Sample_NetTest` windows.
+To try the net test, start `Samples_Server`, then one or two `Sample_NetTest` windows. Point them at another
+machine with `--serverIP=<ip>` (and `--serverPort=<port>`).
+
+### Load test
+`Sample_NetTest_Headless` is the net test without a window, playing as a bot: it scores, chats, answers the quiz,
+measures ping round trips, and with `--duration=<s>` logs a `BOT SUMMARY` line and quits. To run many at once:
+
+```
+bash tools/load_test.sh <path to Sample_NetTest_Headless> <server-ip> [bots=20] [seconds=60]
+```
+
+On Linux (e.g. a Raspberry Pi) the headless bot and the server build without a GPU:
+`cmake --preset pinned -DCMAKE_BUILD_TYPE=Release`, then build `Samples_Server` and `Sample_NetTest_Headless`.
 
 ## Building
 Requires CMake 3.31+ and a C++20 compiler. On Windows the cook also needs `dxc` and `texconv` on `PATH`.
