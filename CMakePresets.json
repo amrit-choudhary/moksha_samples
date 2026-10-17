@@ -1,0 +1,17 @@
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "pinned",
+            "displayName": "Pinned engine",
+            "description": "Builds against the engine commit in MOKSHA_PIN (fetched from GitHub).",
+            "binaryDir": "${sourceDir}/build"
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "pinned",
+            "configurePreset": "pinned"
+        }
+    ]
+}

@@ -1,0 +1,15 @@
+---
+Language:        Cpp
+BasedOnStyle:  Google
+ColumnLimit:     120
+IndentWidth:     4
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortEnumsOnASingleLine: false
+---
+Language:        ObjC
+BasedOnStyle:  Google
+ColumnLimit:     120
+IndentWidth:     4
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortEnumsOnASingleLine: false
+...

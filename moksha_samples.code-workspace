@@ -1,0 +1,22 @@
+{
+    "folders": [
+        {
+            "name": "moksha_samples",
+            "path": "."
+        },
+        {
+            "name": "moksha (engine)",
+            "path": "../../moksha/moksha"
+        }
+    ],
+    "settings": {
+        "files.exclude": {
+            "**/_deps": true
+        },
+        "search.exclude": {
+            "**/build": true,
+            "**/build-*": true
+        },
+        "cmake.sourceDirectory": "${workspaceFolder:moksha_samples}"
+    }
+}
