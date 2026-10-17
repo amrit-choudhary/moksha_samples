@@ -11,5 +11,5 @@ moksha_add_server(Samples_Server
     SOURCES
         main.cpp
         net_test_server.cpp
-    RES_LIST resources/res_list.json)
-target_link_libraries(Samples_Server PRIVATE Samples_ScoreDB Samples_Shared)
+    RES_LIST resources/res_list.json
+    LIBRARIES Samples_ScoreDB Samples_Shared)
