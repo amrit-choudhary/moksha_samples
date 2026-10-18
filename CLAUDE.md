@@ -1,4 +1,5 @@
 @../../moksha/moksha/CLAUDE.md
+@../../moksha/moksha/docs/game_guide.md
 
 # Moksha samples
 
