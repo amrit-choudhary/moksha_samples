@@ -27,6 +27,11 @@ the engine's test harness: an engine change is checked by running the samples ag
   pushes the engine first, then bumps `MOKSHA_PIN` and pushes the samples.
 - The engine's conventions (above) apply here too.
 
+## Survivors stress test
+`Sample_Survivors`: G toggles god mode, B spawns 1,000 enemies. Measure in Release (Debug was 7 fps at 30k).
+Baseline (2026-10-18, Windows DX12, Release): 120 fps up to ~70k enemies, then frames drop; cap is 99k.
+Each plain sprite costs a DX12 constant buffer from a pool of 256, so bulk sprites go in the instanced sets.
+
 ## Raspberry Pi
 - Server-only build: `cmake --preset pinned -DMOKSHA_BUILD_CLIENT=OFF -DCMAKE_BUILD_TYPE=Release`, then build
   `Samples_Server`. Headless bots: configure with the client on (Linux builds only the headless client) and

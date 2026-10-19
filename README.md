@@ -9,6 +9,7 @@ harness.
 | `ui_demo/` | `Sample_UIDemo` | UI widgets (panels, labels, images, a button), text, input |
 | `net_test/` | `Sample_NetTest` | Networking against `Samples_Server`: connect, ping, synced scores, high score, timed quiz |
 | `evolution/` | `Sample_Evolution` | Environment simulation: Perlin-noise terrain, thousands of creatures as instanced atlas sprites, physics colliders; WASD moves the camera |
+| `survivors/` | `Sample_Survivors` | Arena stress test: growing enemy waves (pooled, instanced), auto-fired bullets, layered collision, overlapping SFX; WASD moves. Art: Kenney's Tiny Dungeon (CC0); sounds from `tools/gen_survivors_sfx.py` |
 
 Also built: `Samples_Server` (`server/`, the net test's server, with a SQLite high-score table) and
 `Samples_Tests` (`tests/`). `shared/` holds the code both sides use (the net test's messages).
