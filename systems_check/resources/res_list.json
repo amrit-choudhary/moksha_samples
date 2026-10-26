@@ -1,0 +1,6 @@
+{
+    "copy": [
+        "config/settings.ini",
+        "audio/beep.wav"
+    ]
+}

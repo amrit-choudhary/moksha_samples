@@ -27,6 +27,13 @@ the engine's test harness: an engine change is checked by running the samples ag
   pushes the engine first, then bumps `MOKSHA_PIN` and pushes the samples.
 - The engine's conventions (above) apply here too.
 
+## Systems check (platform bring-up)
+`Sample_SystemsCheck` draws nothing (empty scenes) and logs PASS/FAIL/SKIP for config, time, timers, files, random
+and fixed point, physics, network, input and audio. Run it first on a platform whose renderer isn't ported yet; the
+headless twin runs the automatic checks and quits. The random checksum must be the same on every platform.
+Reference (2026-10-26, macOS headless, Apple clang 21): 7 pass; checksum `299C1597`, fixed-point raw `1270944`.
+The ping it logs counts whole frames (33 ms on localhost at 60 Hz), so it isn't a latency measurement.
+
 ## Survivors stress test
 `Sample_Survivors`: G toggles god mode, B spawns 1,000 enemies. Measure in Release (Debug was 7 fps at 30k).
 Baseline (2026-10-18, Windows DX12, Release): 120 fps up to ~70k enemies, then frames drop; cap is 99k.

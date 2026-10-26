@@ -30,6 +30,7 @@ add_subdirectory(ui_demo)
 add_subdirectory(net_test)
 add_subdirectory(evolution)
 add_subdirectory(survivors)
+add_subdirectory(systems_check)
 
 if(SAMPLES_BUILD_TESTS)
     add_subdirectory(tests)

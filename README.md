@@ -10,12 +10,19 @@ harness.
 | `net_test/` | `Sample_NetTest` | Networking against `Samples_Server`: connect, ping, synced scores, high score, timed quiz |
 | `evolution/` | `Sample_Evolution` | Environment simulation: Perlin-noise terrain, thousands of creatures as instanced atlas sprites, physics colliders; WASD moves the camera |
 | `survivors/` | `Sample_Survivors` | Arena stress test: growing enemy waves (pooled, instanced), auto-fired bullets, layered collision, overlapping SFX; WASD moves. Art: Kenney's Tiny Dungeon (CC0); sounds from `tools/gen_survivors_sfx.py` |
+| `systems_check/` | `Sample_SystemsCheck` | The engine's non-graphics systems, each logged as PASS/FAIL/SKIP: config, time, timers, files, random, physics, network, input, audio. Draws nothing, so it runs first on a new platform |
 
 Also built: `Samples_Server` (`server/`, the net test's server, with a SQLite high-score table) and
 `Samples_Tests` (`tests/`). `shared/` holds the code both sides use (the net test's messages).
 
 To try the net test, start `Samples_Server`, then one or two `Sample_NetTest` windows. Point them at another
 machine with `--serverIP=<ip>` (and `--serverPort=<port>`).
+
+### Systems check
+`Sample_SystemsCheck_Headless` runs the automatic checks, logs a `SYSTEMS CHECK` report after 4 seconds and quits.
+Start `Samples_Server` first, or the network check fails. Compare the random checksum line across platforms: it
+must match. The windowed `Sample_SystemsCheck` also logs key presses and mouse clicks, beeps at start and on
+Space, and quits on Escape.
 
 ### Load test
 `Sample_NetTest_Headless` is the net test without a window, playing as a bot: it scores, chats, answers the quiz,
