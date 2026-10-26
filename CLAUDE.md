@@ -41,6 +41,8 @@ The ping it logs counts whole frames (33 ms on localhost at 60 Hz), so it isn't 
 ## Survivors stress test
 `Sample_Survivors`: G toggles god mode, B spawns 1,000 enemies. Measure in Release (Debug was 7 fps at 30k).
 Baseline (2026-10-18, Windows DX12, Release): 120 fps up to ~70k enemies, then frames drop; cap is 99k.
+Baseline (2026-10-27, macOS Metal 4, M3 MacBook Air, 60 Hz display, vsync on, Release): 60 fps up to ~60k enemies,
+then frames drop. Release build: `cmake --preset pinned -B build-release -DCMAKE_BUILD_TYPE=Release`.
 Each plain sprite costs a DX12 constant buffer from a pool of 256, so bulk sprites go in the instanced sets.
 
 ## Raspberry Pi
