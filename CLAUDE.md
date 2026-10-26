@@ -32,6 +32,7 @@ the engine's test harness: an engine change is checked by running the samples ag
 and fixed point, physics, network, input and audio. Run it first on a platform whose renderer isn't ported yet; the
 headless twin runs the automatic checks and quits. The random checksum must be the same on every platform.
 Reference (2026-10-26, macOS headless, Apple clang 21): 7 pass; checksum `299C1597`, fixed-point raw `1270944`.
+macOS windowed (2026-10-26, null renderer, empty window): input, audio, minimize pause and every quit path work.
 The ping it logs counts whole frames (33 ms on localhost at 60 Hz), so it isn't a latency measurement.
 
 ## Survivors stress test
