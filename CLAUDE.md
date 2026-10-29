@@ -50,6 +50,10 @@ Each plain sprite costs a DX12 constant buffer from a pool of 256, so bulk sprit
 right half, or Left/Right/A/D, to leap between walls. The camera never moves: shaft rows and a 16-slot hazard pool
 recycle as the world scrolls down, so coordinates stay small. `ReadTap()` is the only input read; touch replaces it.
 Verified on macOS Metal 4 (2026-10-30). Open: anvils can pinch an older hazard on the other wall (no fairness rule yet).
+iOS (2026-10-30, iPhone 16, iOS 27, Xcode 27.1): plays and saves its best height. Build with the per-machine
+`ios-device` preset (Xcode generator, `build-ios/`, team ID and `MOKSHA_BUNDLE_ID_PREFIX`; it needs `Moksha_Cook`
+built in `build-live` first), then run from `build-ios/MokshaSamples.xcodeproj` in Xcode, or install and launch with
+`xcrun devicectl`. Device only: the Simulator has no Metal 4. A free team's signing lasts 7 days.
 
 ## Raspberry Pi
 - Server-only build: `cmake --preset pinned -DMOKSHA_BUILD_CLIENT=OFF -DCMAKE_BUILD_TYPE=Release`, then build

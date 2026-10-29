@@ -7,4 +7,6 @@ moksha_add_game(Sample_TowerClimb
         game/game_tower_climb.cpp
         scene/scene_tower_climb.cpp
         scene/scene_ui_tower_climb.cpp
-    RES_LIST resources/res_list.json)
+    RES_LIST resources/res_list.json
+    DISPLAY_NAME "Tower Climb"
+    ORIENTATION PORTRAIT)
