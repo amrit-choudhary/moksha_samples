@@ -45,6 +45,12 @@ Baseline (2026-10-27, macOS Metal 4, M3 MacBook Air, 60 Hz display, vsync on, Re
 then frames drop. Release build: `cmake --preset pinned -B build-release -DCMAKE_BUILD_TYPE=Release`.
 Each plain sprite costs a DX12 constant buffer from a pool of 256, so bulk sprites go in the instanced sets.
 
+## Tower Climb (mobile PoC)
+`Sample_TowerClimb`: endless portrait climber (450×800), the proof of concept for the iOS port. Tap (click) the left or
+right half, or Left/Right/A/D, to leap between walls. The camera never moves: shaft rows and a 16-slot hazard pool
+recycle as the world scrolls down, so coordinates stay small. `ReadTap()` is the only input read; touch replaces it.
+Verified on macOS Metal 4 (2026-10-30). Open: anvils can pinch an older hazard on the other wall (no fairness rule yet).
+
 ## Raspberry Pi
 - Server-only build: `cmake --preset pinned -DMOKSHA_BUILD_CLIENT=OFF -DCMAKE_BUILD_TYPE=Release`, then build
   `Samples_Server`. Headless bots: configure with the client on (Linux builds only the headless client) and

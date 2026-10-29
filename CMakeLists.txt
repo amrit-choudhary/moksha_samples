@@ -31,6 +31,7 @@ add_subdirectory(net_test)
 add_subdirectory(evolution)
 add_subdirectory(survivors)
 add_subdirectory(systems_check)
+add_subdirectory(tower_climb)
 
 if(SAMPLES_BUILD_TESTS)
     add_subdirectory(tests)

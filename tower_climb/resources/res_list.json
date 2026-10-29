@@ -1,0 +1,11 @@
+{
+    "copy": [
+        "config/settings.ini",
+        "texture_data/atlas_tiny_dungeon.json",
+        "audio/jump.wav",
+        "audio/hit.wav"
+    ],
+    "textures": [
+        "textures/world/tiny_dungeon.png"
+    ]
+}
