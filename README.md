@@ -11,9 +11,10 @@ harness.
 | `evolution/` | `Sample_Evolution` | Environment simulation: Perlin-noise terrain, thousands of creatures as instanced atlas sprites, physics colliders; WASD moves the camera |
 | `survivors/` | `Sample_Survivors` | Arena stress test: growing enemy waves (pooled, instanced), auto-fired bullets, layered collision, overlapping SFX; WASD moves. Art: Kenney's Tiny Dungeon (CC0); sounds from `tools/gen_survivors_sfx.py` |
 | `systems_check/` | `Sample_SystemsCheck` | The engine's non-graphics systems, each logged as PASS/FAIL/SKIP: config, time, timers, files, random, physics, network, input, audio. Draws nothing, so it runs first on a new platform |
+| `rally/` | `Sample_Rally` | Two-player paddle ball over the network (portrait, one paddle per phone): `Samples_Server` runs the match, clients send their paddle and draw the server's state. `Sample_Rally_Headless` is a bot that plays until a second human joins |
 
-Also built: `Samples_Server` (`server/`, the net test's server, with a SQLite high-score table) and
-`Samples_Tests` (`tests/`). `shared/` holds the code both sides use (the net test's messages).
+Also built: `Samples_Server` (`server/`, the net test's and the rally's server, with a SQLite high-score table) and
+`Samples_Tests` (`tests/`). `shared/` holds the code both sides use (the samples' messages, the rally rules).
 
 To try the net test, start `Samples_Server`, then one or two `Sample_NetTest` windows. Point them at another
 machine with `--serverIP=<ip>` (and `--serverPort=<port>`).

@@ -1,4 +1,4 @@
-# Samples_Tests: unit tests for the samples' own code (score database, net test messages).
+# Samples_Tests: unit tests for the samples' own code (score database, the samples' messages).
 
 file(GLOB SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 

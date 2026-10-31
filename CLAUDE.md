@@ -63,6 +63,15 @@ id runs from Xcode, which makes the provisioning profile (command-line builds ca
 launch, allow Local Network access. Verified (2026-10-31, iPhone, Pi 4B server at 192.168.29.15): connects and plays
 against the Pi.
 
+## Rally (two-player network test)
+`Sample_Rally`: portrait paddle ball for two phones (450×800). `Samples_Server` runs the match (`server/rally_server.h`,
+60 Hz) and sends its state every tick; clients send their paddle x every fixed step and draw the newest state, with no
+interpolation or prediction (only the own paddle is drawn where the finger is). Seat 1 sees the court turned
+around. A client is connected while its input arrives: one silent for 2 s loses its seat (the engine's `GameServer`
+never drops clients and gives a reconnect a new ID). Free seats go to whoever sends input; a human takes a bot's seat.
+`Sample_Rally_Headless` is that bot, meant to run all the time as the partner for a single phone. `server/main.cpp`
+routes verbs from `RALLY_INPUT` on to the rally, the rest to the net test. Not yet run.
+
 ## Raspberry Pi
 - The Pi is `amritpi` (192.168.29.15), Debian 13 aarch64; the clone is
   `~/gamedev/cpp_projects/moksha_samples/moksha_samples`. The user runs commands on the Pi themselves.

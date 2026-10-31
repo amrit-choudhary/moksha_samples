@@ -1,7 +1,25 @@
 #include "samples_protocol.h"
 
+#include <cstring>
+
 #include "moksha/shared/serialization/byte_reader.h"
 #include "moksha/shared/serialization/byte_writer.h"
+
+// Floats travel as their 32 bits, in native byte order like the integers.
+static bool WriteF32(ME::ByteWriter& writer, float value) {
+    uint32_t bits = 0;
+    std::memcpy(&bits, &value, sizeof(bits));
+    return writer.WriteU32(bits);
+}
+
+static bool ReadF32(ME::ByteReader& reader, float& out) {
+    uint32_t bits = 0;
+    if (!reader.ReadU32(bits)) {
+        return false;
+    }
+    std::memcpy(&out, &bits, sizeof(out));
+    return true;
+}
 
 bool Samples::NetProtocol::WriteQuizQuestion(ME::ByteWriter& writer, const QuizQuestion& question) {
     return writer.WriteU32(question.id) && writer.WriteU8(question.lhs) &&
@@ -51,5 +69,38 @@ bool Samples::NetProtocol::ReadSurvivorsWave(ME::ByteReader& reader, SurvivorsWa
         return false;
     }
     out = wave;
+    return true;
+}
+
+bool Samples::NetProtocol::WriteRallyInput(ME::ByteWriter& writer, const RallyInput& input) {
+    return WriteF32(writer, input.paddleX) && writer.WriteU8(input.bBot ? 1 : 0);
+}
+
+bool Samples::NetProtocol::ReadRallyInput(ME::ByteReader& reader, RallyInput& out) {
+    RallyInput input;
+    uint8_t bot = 0;
+    if (!ReadF32(reader, input.paddleX) || !reader.ReadU8(bot)) {
+        return false;
+    }
+    input.bBot = bot != 0;
+    out = input;
+    return true;
+}
+
+bool Samples::NetProtocol::WriteRallyState(ME::ByteWriter& writer, const RallyState& state) {
+    return writer.WriteU8(state.phase) && writer.WriteU8(state.seatClients[0]) &&
+           writer.WriteU8(state.seatClients[1]) && writer.WriteU8(state.scores[0]) && writer.WriteU8(state.scores[1]) &&
+           WriteF32(writer, state.ballX) && WriteF32(writer, state.ballY) && WriteF32(writer, state.paddleX[0]) &&
+           WriteF32(writer, state.paddleX[1]);
+}
+
+bool Samples::NetProtocol::ReadRallyState(ME::ByteReader& reader, RallyState& out) {
+    RallyState state;
+    if (!reader.ReadU8(state.phase) || !reader.ReadU8(state.seatClients[0]) || !reader.ReadU8(state.seatClients[1]) ||
+        !reader.ReadU8(state.scores[0]) || !reader.ReadU8(state.scores[1]) || !ReadF32(reader, state.ballX) ||
+        !ReadF32(reader, state.ballY) || !ReadF32(reader, state.paddleX[0]) || !ReadF32(reader, state.paddleX[1])) {
+        return false;
+    }
+    out = state;
     return true;
 }

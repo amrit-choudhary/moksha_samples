@@ -1,4 +1,4 @@
-# Samples_Server: the server the net test sample connects to (scores, high score, quiz).
+# Samples_Server: the server the net test and rally samples connect to (scores, high score, quiz; the rally match).
 
 add_subdirectory(third_party/sqlite3)
 
@@ -11,5 +11,6 @@ moksha_add_server(Samples_Server
     SOURCES
         main.cpp
         net_test_server.cpp
+        rally_server.cpp
     RES_LIST resources/res_list.json
     LIBRARIES Samples_ScoreDB Samples_Shared)
