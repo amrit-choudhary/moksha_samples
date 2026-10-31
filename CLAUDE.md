@@ -55,11 +55,23 @@ iOS (2026-10-30, iPhone 16, iOS 27, Xcode 27.1): plays and saves its best height
 built in `build-live` first), then run from `build-ios/MokshaSamples.xcodeproj` in Xcode, or install and launch with
 `xcrun devicectl`. Device only: the Simulator has no Metal 4. A free team's signing lasts 7 days.
 
+## Net test on iOS
+`Sample_NetTest` is landscape on iOS; its centre column fits a 393-point-high phone. It resends CONNECT every second
+until the server answers. Point `[net] serverIP` / `contentServerIP` in its `settings.ini` at the server before
+building (the copy in the app can't be edited); keep that edit out of commits. The first signed build of a new bundle
+id runs from Xcode, which makes the provisioning profile (command-line builds can't use the Xcode account). On first
+launch, allow Local Network access. Verified (2026-10-31, iPhone, Pi 4B server at 192.168.29.15): connects and plays
+against the Pi.
+
 ## Raspberry Pi
+- The Pi is `amritpi` (192.168.29.15), Debian 13 aarch64; the clone is
+  `~/gamedev/cpp_projects/moksha_samples/moksha_samples`. The user runs commands on the Pi themselves.
 - Server-only build: `cmake --preset pinned -DMOKSHA_BUILD_CLIENT=OFF -DCMAKE_BUILD_TYPE=Release`, then build
-  `Samples_Server`. Headless bots: configure with the client on (Linux builds only the headless client) and
-  build `Sample_NetTest_Headless`; `bash tools/load_test.sh <bot exe> <server-ip> [bots] [seconds]`. Verified:
-  20 bots × 60 s on a Pi 4B.
-- Open: the Pi's server dashboard (me_server_manager, see the village_shop repo's CLAUDE.md) still runs the
-  old server; point its `config.json` at `build/server/Samples_Server` when wanted. A small sample `dlc/`
-  for the engine's content server doesn't exist yet.
+  `Samples_Server`. Verified 2026-10-31 at pin `d3adef2`, with the Mac net test as the client. Headless bots:
+  configure with the client on (Linux builds only the headless client) and build `Sample_NetTest_Headless`;
+  `bash tools/load_test.sh <bot exe> <server-ip> [bots] [seconds]`. Verified: 20 bots × 60 s on a Pi 4B.
+- The Pi's dashboard (`me_server_manager`, a separate repo; `http://192.168.29.15:8080`) builds and runs
+  `Samples_Server` and the engine's `Moksha_ContentServer` (configure adds `-DMOKSHA_BUILD_TOOLS=ON`). The content
+  server runs in place at `build/_deps/moksha-build/tools/content_server/`, so a rebuild can replace it while it
+  runs; the build steps copy its `settings.ini` and the engine's `test_dlc/` (one `hello.txt`) next to it as
+  `dlc/`. Open: the samples have no `dlc/` of their own yet; when they do, change that copy step.

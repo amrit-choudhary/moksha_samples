@@ -60,7 +60,9 @@ void Samples::SceneUINetTest::BuildUIElements() {
         new ME::Label("Connecting...", 0, 1, 0, ME::Color::Yellow(), 24, 24, 0, 2, 80, ME::TextAlignment::Center);
     statusLabel->SetAnchor(ME::UIAnchor::Center);
     statusLabel->SetPivot(ME::UIPivot::Center);
-    statusLabel->SetOffset(ME::Vec2{0.0f, -60.0f});
+    // The centre column stays within 125 of the middle, so it fits between the top bar and the bottom row on a
+    // landscape phone (393 points high).
+    statusLabel->SetOffset(ME::Vec2{0.0f, -100.0f});
     statusLabel->SetSize(ME::Vec2{400.0f, 40.0f});
     statusLabel->Init();
     AddUIElement(statusLabel);
@@ -69,7 +71,7 @@ void Samples::SceneUINetTest::BuildUIElements() {
         new ME::Label("Pings: 0 / Pongs: 0", 0, 1, 0, ME::Color::White(), 24, 24, 0, 2, 80, ME::TextAlignment::Center);
     pingLabel->SetAnchor(ME::UIAnchor::Center);
     pingLabel->SetPivot(ME::UIPivot::Center);
-    pingLabel->SetOffset(ME::Vec2{0.0f, -10.0f});
+    pingLabel->SetOffset(ME::Vec2{0.0f, -60.0f});
     pingLabel->SetSize(ME::Vec2{400.0f, 40.0f});
     pingLabel->Init();
     AddUIElement(pingLabel);
@@ -78,7 +80,7 @@ void Samples::SceneUINetTest::BuildUIElements() {
         new ME::Label("Global High: -", 0, 1, 0, ME::Color::Green(), 24, 24, 0, 2, 80, ME::TextAlignment::Center);
     highScoreLabel->SetAnchor(ME::UIAnchor::Center);
     highScoreLabel->SetPivot(ME::UIPivot::Center);
-    highScoreLabel->SetOffset(ME::Vec2{0.0f, 40.0f});
+    highScoreLabel->SetOffset(ME::Vec2{0.0f, -20.0f});
     highScoreLabel->SetSize(ME::Vec2{400.0f, 40.0f});
     highScoreLabel->Init();
     AddUIElement(highScoreLabel);
@@ -132,7 +134,7 @@ void Samples::SceneUINetTest::BuildUIElements() {
                                       ME::TextAlignment::Center);
     quizQuestionLabel->SetAnchor(ME::UIAnchor::Center);
     quizQuestionLabel->SetPivot(ME::UIPivot::Center);
-    quizQuestionLabel->SetOffset(ME::Vec2{0.0f, 100.0f});
+    quizQuestionLabel->SetOffset(ME::Vec2{0.0f, 25.0f});
     quizQuestionLabel->SetSize(ME::Vec2{500.0f, 40.0f});
     quizQuestionLabel->Init();
     AddUIElement(quizQuestionLabel);
@@ -142,7 +144,7 @@ void Samples::SceneUINetTest::BuildUIElements() {
         answerButtons[i] = new ME::Button();
         answerButtons[i]->SetAnchor(ME::UIAnchor::Center);
         answerButtons[i]->SetPivot(ME::UIPivot::Center);
-        answerButtons[i]->SetOffset(ME::Vec2{answerOffsetsX[i], 160.0f});
+        answerButtons[i]->SetOffset(ME::Vec2{answerOffsetsX[i], 85.0f});
         answerButtons[i]->SetSize(ME::Vec2{180.0f, 50.0f});
         answerButtons[i]->Init();
         AddUIElement(answerButtons[i]);

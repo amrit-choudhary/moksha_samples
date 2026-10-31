@@ -13,7 +13,7 @@ if(MSVC)
 endif()
 
 # The engine commit every sample builds against. Bump it after pushing the engine changes the samples need.
-set(MOKSHA_PIN d3adef2eab15c3e0acba6e80e73b43a505337ecf)
+set(MOKSHA_PIN 99efe23929c97ad9377116c73f53e3f8ae7c0b55)
 
 include(FetchContent)
 FetchContent_Declare(moksha

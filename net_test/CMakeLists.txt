@@ -8,4 +8,6 @@ moksha_add_game(Sample_NetTest
         scene/scene_ui_net_test.cpp
     RES_LIST resources/res_list.json
     LIBRARIES Samples_Shared
+    DISPLAY_NAME "Net Test"
+    ORIENTATION LANDSCAPE
     HEADLESS)

@@ -69,6 +69,9 @@ class GameNetTest : public ME::Game, public ME::IGameClientListener {
 
     static constexpr double kPingIntervalSeconds = 2.0;
 
+    double connectRetryTimer = 0.0;
+    static constexpr double kConnectRetrySeconds = 1.0;
+
     // The question currently shown, so a picked option can be reported.
     NetProtocol::QuizQuestion lastQuizQuestion;
 

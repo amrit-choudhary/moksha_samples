@@ -61,6 +61,16 @@ void Samples::GameNetTest::Start() {
 void Samples::GameNetTest::Update(double deltaTime) {
     Game::Update(deltaTime);
 
+    // A CONNECT can be lost (UDP, or iOS dropping it while it asks for local network access), so keep asking until
+    // the server answers.
+    if (!engine->gameClient->IsConnected()) {
+        connectRetryTimer += deltaTime;
+        if (connectRetryTimer >= kConnectRetrySeconds) {
+            connectRetryTimer -= kConnectRetrySeconds;
+            engine->gameClient->SendConnectRequest();
+        }
+    }
+
     pingTimer += deltaTime;
     if (pingTimer >= kPingIntervalSeconds) {
         pingTimer -= kPingIntervalSeconds;
