@@ -72,6 +72,20 @@ never drops clients and gives a reconnect a new ID). Free seats go to whoever se
 `Sample_Rally_Headless` is that bot, meant to run all the time as the partner for a single phone. `server/main.cpp`
 routes verbs from `RALLY_INPUT` on to the rally, the rest to the net test. Not yet run.
 
+## Graphics Stress (rendering stress test and demo)
+`Sample_GraphicsStress`: portrait spiral galaxy that loads every render path (450×800). ^ and v select a load, - and +
+change it: stars (set 1, up to 100k), moving stars (the same stars marked dirty each frame, so their matrices are rebuilt
+in `Scene::Update`), clouds (set 0, up to 5k), cloud size (100-400%, overdraw grows with its square), UI panels and UI
+text (240 each). 200 plain sprites always orbit, one draw call each. The same galaxy is built on every run. A press has a
+one-frame hitch, so read the FPS after it settles.
+5k clouds at 100% did not drop frames, so raise the size to reach the fill limit. Engine ceilings that keep some loads
+from reaching a drop: plain sprites take a 256-entry constant buffer array (the draw count is also fixed at startup, so it
+has no button), UI trees 512 elements, text 10k glyphs. The renderer copies both full instance buffers (105k × 88 bytes)
+every frame, whatever the buttons say.
+Instances get nearer in draw order: depth is Less with writes on, so at equal depth only the first sprite would draw.
+iOS draws on a 60 Hz timer with one frame in flight, so its FPS falls in steps (60, 30, 20). Measure in Release.
+Below 1 fps a frame outlasts the renderer's 1 s GPU wait, so don't extend the size ladder past that.
+
 ## Raspberry Pi
 - The Pi is `amritpi` (192.168.29.15), Debian 13 aarch64; the clone is
   `~/gamedev/cpp_projects/moksha_samples/moksha_samples`. The user runs commands on the Pi themselves.

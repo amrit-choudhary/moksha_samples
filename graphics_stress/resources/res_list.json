@@ -1,0 +1,11 @@
+{
+    "copy": [
+        "config/settings.ini",
+        "texture_data/atlas_clouds.json",
+        "texture_data/atlas_stars.json"
+    ],
+    "textures": [
+        "textures/galaxy/clouds.png",
+        "textures/galaxy/stars.png"
+    ]
+}

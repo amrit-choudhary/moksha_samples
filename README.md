@@ -12,6 +12,7 @@ harness.
 | `survivors/` | `Sample_Survivors` | Arena stress test: growing enemy waves (pooled, instanced), auto-fired bullets, layered collision, overlapping SFX; WASD moves. Art: Kenney's Tiny Dungeon (CC0); sounds from `tools/gen_survivors_sfx.py` |
 | `systems_check/` | `Sample_SystemsCheck` | The engine's non-graphics systems, each logged as PASS/FAIL/SKIP: config, time, timers, files, random, physics, network, input, audio. Draws nothing, so it runs first on a new platform |
 | `rally/` | `Sample_Rally` | Two-player paddle ball over the network (portrait, one paddle per phone): `Samples_Server` runs the match, clients send their paddle and draw the server's state. `Sample_Rally_Headless` is a bot that plays until a second human joins |
+| `graphics_stress/` | `Sample_GraphicsStress` | Rendering stress test and demo (portrait, runs on iPhone): a turning spiral galaxy, with buttons that raise each render path's load (instances, moving instances, overdraw, UI panels, UI text) until the frame rate drops; 200 plain sprites add draw calls. Textures from `tools/gen_graphics_stress_textures.py` |
 
 Also built: `Samples_Server` (`server/`, the net test's and the rally's server, with a SQLite high-score table) and
 `Samples_Tests` (`tests/`). `shared/` holds the code both sides use (the samples' messages, the rally rules).

@@ -33,6 +33,7 @@ add_subdirectory(survivors)
 add_subdirectory(systems_check)
 add_subdirectory(tower_climb)
 add_subdirectory(rally)
+add_subdirectory(graphics_stress)
 
 if(SAMPLES_BUILD_TESTS)
     add_subdirectory(tests)
