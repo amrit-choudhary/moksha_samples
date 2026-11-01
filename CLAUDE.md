@@ -43,7 +43,8 @@ The ping it logs counts whole frames (33 ms on localhost at 60 Hz), so it isn't 
 Baseline (2026-10-18, Windows DX12, Release): 120 fps up to ~70k enemies, then frames drop; cap is 99k.
 Baseline (2026-10-27, macOS Metal 4, M3 MacBook Air, 60 Hz display, vsync on, Release): 60 fps up to ~60k enemies,
 then frames drop. Release build: `cmake --preset pinned -B build-release -DCMAKE_BUILD_TYPE=Release`.
-Each plain sprite costs a DX12 constant buffer from a pool of 256, so bulk sprites go in the instanced sets.
+Each plain sprite costs its own constant buffer, up to 1,000 (`MaxSpriteRendererCount`), so bulk sprites go in the instanced
+sets.
 
 ## Tower Climb (mobile PoC)
 `Sample_TowerClimb`: endless portrait climber (450×800), the proof of concept for the iOS port. Tap (click) the left or
@@ -76,11 +77,11 @@ routes verbs from `RALLY_INPUT` on to the rally, the rest to the net test. Not y
 `Sample_GraphicsStress`: portrait spiral galaxy that loads every render path (450×800). ^ and v select a load, - and +
 change it: stars (set 1, up to 100k), moving stars (the same stars marked dirty each frame, so their matrices are rebuilt
 in `Scene::Update`), clouds (set 0, up to 5k), cloud size (100-400%, overdraw grows with its square), UI panels and UI
-text (240 each). 200 plain sprites always orbit, one draw call each. The same galaxy is built on every run. A press has a
+text (240 each). 1,000 plain sprites always orbit, one draw call each. The same galaxy is built on every run. A press has a
 one-frame hitch, so read the FPS after it settles.
 5k clouds at 100% did not drop frames, so raise the size to reach the fill limit. Engine ceilings that keep some loads
-from reaching a drop: plain sprites take a 256-entry constant buffer array (the draw count is also fixed at startup, so it
-has no button), UI trees 512 elements, text 10k glyphs. The renderer copies both full instance buffers (105k × 88 bytes)
+from reaching a drop: plain sprites stop at 1,000 (`MaxSpriteRendererCount`; the draw count is also fixed at startup, so it
+has no button), UI trees 512 elements, text 10k glyphs. The renderer copies both full instance buffers (105k × 96 bytes)
 every frame, whatever the buttons say.
 Instances get nearer in draw order: depth is Less with writes on, so at equal depth only the first sprite would draw.
 iOS draws on a 60 Hz timer with one frame in flight, so its FPS falls in steps (60, 30, 20). Measure in Release.

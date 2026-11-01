@@ -1,7 +1,7 @@
 /**
  * Graphics Stress game: loads every render path while the camera rolls, until the frame rate drops. One load is
  * selected at a time and raised or lowered with buttons: stars and clouds (instanced sets and overdraw), moving stars
- * (the per-frame instance update), UI panels and text (the UI passes and their per-frame rebuild). 200 giant stars
+ * (the per-frame instance update), UI panels and text (the UI passes and their per-frame rebuild). 1,000 giant stars
  * always orbit as plain sprites, one draw call each. No physics, audio or network.
  */
 

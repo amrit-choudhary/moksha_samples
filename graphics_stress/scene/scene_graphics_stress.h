@@ -51,7 +51,7 @@ class SceneGraphicsStress : public ME::Scene {
 
     static constexpr uint32_t MAX_STARS = 100'000;
     static constexpr uint32_t MAX_CLOUDS = 5'000;
-    static constexpr uint32_t GIANT_COUNT = 200;  // leaves DX12 room in its 256 constant buffers and descriptors
+    static constexpr uint32_t GIANT_COUNT = 1'000;  // the engine's limit, MaxSpriteRendererCount
 
    private:
     uint32_t starCount = MAX_STARS;  // as built; Init leaves every instance visible until the game sets a count
