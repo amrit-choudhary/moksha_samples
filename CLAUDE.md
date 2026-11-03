@@ -87,6 +87,19 @@ Instances get nearer in draw order: depth is Less with writes on, so at equal de
 iOS draws on a 60 Hz timer with one frame in flight, so its FPS falls in steps (60, 30, 20). Measure in Release.
 Below 1 fps a frame outlasts the renderer's 1 s GPU wait, so don't extend the size ladder past that.
 
+## Web
+Every offline sample plays in a browser. Verified 2026-11-04 in Safari on macOS (M3), Emscripten 6.0.13: Tower Climb, Survivors,
+Evolution, UI Demo and Graphics Stress, with input, audio and saves. Rally and Net Test build, but browsers have no raw sockets,
+so they can't connect. `Sample_SystemsCheck` is a good first check: its network check fails, and its checksums must match.
+- Setup: emsdk, whose install needs Python 3.10+, and a per-machine `web` preset (`build-web/`, Release, Emscripten's toolchain
+  file, `EMSDK_PYTHON`, `MOKSHA_COOK_EXECUTABLE` from `build-live`, tests off). Rebuild `Moksha_Cook` in `build-live` after
+  changing the cook. A changed `MOKSHA_RENDERER` default needs `cmake --preset web --fresh`.
+- `python3 tools/build_web.py` builds the published samples into `dist/` with an index page. Serve it with
+  `python3 -m http.server -d dist 8000` and open `http://localhost:8000/`; WebGPU needs `localhost` or HTTPS.
+- Reload with Cmd+Option+R after a build, or Safari may run the old files. Under Node, the headless twin
+  (`Sample_SystemsCheck_Headless.js`) runs from its build folder with emsdk's Node.
+- The two socket errors in the console at startup are expected. Plan and research: the engine's `docs/web_port_plan.md`.
+
 ## Raspberry Pi
 - The Pi is `amritpi` (192.168.29.15), Debian 13 aarch64; the clone is
   `~/gamedev/cpp_projects/moksha_samples/moksha_samples`. The user runs commands on the Pi themselves.

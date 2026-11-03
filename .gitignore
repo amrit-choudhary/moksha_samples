@@ -40,3 +40,6 @@
 
 # Per-machine presets (the live engine link)
 /CMakeUserPresets.json
+
+# Web build output (tools/build_web.py)
+/dist
