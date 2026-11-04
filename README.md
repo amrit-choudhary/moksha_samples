@@ -4,6 +4,8 @@ Small games built on the [Moksha engine](https://github.com/amrit-choudhary/moks
 folder with its own executable. They show how a game uses the engine and serve as the engine's test
 harness.
 
+Website: [mokshaengine.com](https://mokshaengine.com)
+
 | Sample | Executable | Shows |
 |---|---|---|
 | `ui_demo/` | `Sample_UIDemo` | UI widgets (panels, labels, images, a button), text, input |
