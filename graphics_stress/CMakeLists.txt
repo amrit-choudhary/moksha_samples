@@ -1,5 +1,5 @@
 # Graphics Stress: a turning spiral galaxy that loads every render path, with buttons to raise each load until the frame
-# rate drops. Textures come from tools/gen_graphics_stress_textures.py.
+# rate drops. Textures are procedurally generated.
 
 moksha_add_game(Sample_GraphicsStress
     SOURCES

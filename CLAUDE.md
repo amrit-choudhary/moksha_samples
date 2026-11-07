@@ -95,8 +95,8 @@ effects. Touch: drag to move, drag down to soft drop, swipe down to hard drop, s
 to rotate, tap above the well to pause. Keys: arrows, Space, Z/X/Up, C/Shift, P, M mute.
 The title screen is attract mode: `game/prism_autoplay.*` plays a dimmed, silent demo that ends at 30 lines and
 restarts, so `Sample_PrismDrop_Headless` runs locks, clears, level-ups and game overs without input.
-Art, sounds and music all come from `python3 tools/gen_prism_drop_assets.py` (stdlib only, deterministic); piece
-colours there must match `game/prism_palette.h`. Set 0 holds every block in fixed slots, set 1 the particle pool
+Its art, sounds and music are generated (made outside this repo); the piece colours in the block art match
+`game/prism_palette.h`. Set 0 holds every block in fixed slots, set 1 the particle pool
 (`game/prism_fx.*`), each slot with its own depth (see the scene header). The engine's `StopMusic` and mute do nothing
 yet, so pausing sets the master volume to 0.
 Verified 2026-11-07 (macOS M3, live engine): builds for macOS, web and iOS (unsigned); 20/20 tests; 2 min headless

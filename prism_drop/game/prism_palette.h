@@ -14,7 +14,7 @@ namespace Samples::PrismPalette {
 
 constexpr size_t PIECE_COLOR_COUNT = 7;
 
-// I, O, T, S, Z, J, L; matches PIECE_COLORS in tools/gen_prism_drop_assets.py.
+// I, O, T, S, Z, J, L; the same colours as the block art in blocks.png.
 constexpr ME::Color PIECES[PIECE_COLOR_COUNT] = {
     {0.24f, 0.90f, 1.00f, 1.0f}, {1.00f, 0.85f, 0.24f, 1.0f}, {0.72f, 0.42f, 1.00f, 1.0f}, {0.36f, 0.95f, 0.48f, 1.0f},
     {1.00f, 0.31f, 0.42f, 1.0f}, {0.31f, 0.48f, 1.00f, 1.0f}, {1.00f, 0.60f, 0.24f, 1.0f},
