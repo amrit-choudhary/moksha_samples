@@ -19,7 +19,7 @@
         "audio/game_over.wav",
         "audio/start.wav",
         "audio/pause.wav",
-        "audio/music.wav"
+        "audio/music.mp3"
     ],
     "textures": [
         "textures/prism/backdrop.png",

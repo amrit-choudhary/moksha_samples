@@ -96,7 +96,7 @@ to rotate, tap above the well to pause. Keys: arrows, Space, Z/X/Up, C/Shift, P,
 The title screen is attract mode: `game/prism_autoplay.*` plays a dimmed, silent demo that ends at 30 lines and
 restarts, so `Sample_PrismDrop_Headless` runs locks, clears, level-ups and game overs without input.
 Its art, sounds and music are generated (made outside this repo); the piece colours in the block art match
-`game/prism_palette.h`. Set 0 holds every block in fixed slots, set 1 the particle pool
+`game/prism_palette.h`. The music is a gapless 96 kbps MP3 (verified 2026-11-07). Set 0 holds every block in fixed slots, set 1 the particle pool
 (`game/prism_fx.*`), each slot with its own depth (see the scene header). The engine's `StopMusic` and mute do nothing
 yet, so pausing sets the master volume to 0.
 Verified 2026-11-07 (macOS M3, live engine): builds for macOS, web and iOS (unsigned); 20/20 tests; 2 min headless

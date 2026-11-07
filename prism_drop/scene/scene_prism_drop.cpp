@@ -53,7 +53,7 @@ void Samples::ScenePrismDrop::CreateResources() {
     sfxPaths[PrismSfx::PAUSE] = "audio/pause.wav";
     sfxPaths.count = PrismSfx::COUNT;
 
-    musicPaths[0] = "audio/music.wav";
+    musicPaths[0] = "audio/music.mp3";
     musicPaths.count = 1;
 }
 
