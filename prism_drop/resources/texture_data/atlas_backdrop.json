@@ -1,0 +1,11 @@
+{
+    "tileSizeX": 360,
+    "tileSizeY": 640,
+    "padding": 0,
+    "numTextures": 1,
+    "numTilesX": 1,
+    "numTilesY": 1,
+    "width": 360,
+    "height": 640,
+    "paddingType": 0
+}

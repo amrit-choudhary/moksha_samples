@@ -87,6 +87,23 @@ Instances get nearer in draw order: depth is Less with writes on, so at equal de
 iOS draws on a 60 Hz timer with one frame in flight, so its FPS falls in steps (60, 30, 20). Measure in Release.
 Below 1 fps a frame outlasts the renderer's 1 s GPU wait, so don't extend the size ladder past that.
 
+## Prism Drop (falling block puzzle)
+`Sample_PrismDrop`: portrait (450×800) falling block puzzle for iPhone and the web. The rules are pure code in
+`game/prism_board.*` (10×22 well, seven-piece bag, rotation kicks, hold, T-spin, combo, back-to-back, perfect clear),
+tested in `Samples_Tests`; `game_prism_drop.cpp` does timing (gravity, 0.5 s lock delay, 15 resets, DAS/ARR), input and
+effects. Touch: drag to move, drag down to soft drop, swipe down to hard drop, swipe up or tap the hold box to hold, tap
+to rotate, tap above the well to pause. Keys: arrows, Space, Z/X/Up, C/Shift, P, M mute.
+The title screen is attract mode: `game/prism_autoplay.*` plays a dimmed, silent demo that ends at 30 lines and
+restarts, so `Sample_PrismDrop_Headless` runs locks, clears, level-ups and game overs without input.
+Art, sounds and music all come from `python3 tools/gen_prism_drop_assets.py` (stdlib only, deterministic); piece
+colours there must match `game/prism_palette.h`. Set 0 holds every block in fixed slots, set 1 the particle pool
+(`game/prism_fx.*`), each slot with its own depth (see the scene header). The engine's `StopMusic` and mute do nothing
+yet, so pausing sets the master volume to 0.
+Verified 2026-11-07 (macOS M3, live engine): builds for macOS, web and iOS (unsigned); 20/20 tests; 2 min headless
+demo; Metal runs with no validation errors. Plays on the web (2026-11-07, mokshaengine.com). Not yet played on an
+iPhone. The first signed iOS build of
+its bundle id runs from Xcode.
+
 ## Web
 Every offline sample plays in a browser. Verified 2026-11-04 in Safari on macOS (M3), Emscripten 6.0.13: Tower Climb, Survivors,
 Evolution, UI Demo and Graphics Stress, with input, audio and saves. Rally and Net Test build, but browsers have no raw sockets,

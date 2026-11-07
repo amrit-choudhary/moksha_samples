@@ -15,6 +15,7 @@ Website: [mokshaengine.com](https://mokshaengine.com)
 | `systems_check/` | `Sample_SystemsCheck` | The engine's non-graphics systems, each logged as PASS/FAIL/SKIP: config, time, timers, files, random, physics, network, input, audio. Draws nothing, so it runs first on a new platform |
 | `rally/` | `Sample_Rally` | Two-player paddle ball over the network (portrait, one paddle per phone): `Samples_Server` runs the match, clients send their paddle and draw the server's state. `Sample_Rally_Headless` is a bot that plays until a second human joins |
 | `graphics_stress/` | `Sample_GraphicsStress` | Rendering stress test and demo (portrait, runs on iPhone): a turning spiral galaxy, with buttons that raise each render path's load (instances, moving instances, overdraw, UI panels, UI text) until the frame rate drops; 1,000 plain sprites add draw calls. Textures from `tools/gen_graphics_stress_textures.py` |
+| `prism_drop/` | `Sample_PrismDrop` | Falling block puzzle (portrait, iPhone and web): seven-piece bag, rotation kicks, hold, ghost, T-spins, combos; particles, eased piece motion, row collapse, screen shake, popups and looping music. The title screen plays itself. All art, sounds and music from `tools/gen_prism_drop_assets.py` |
 
 Also built: `Samples_Server` (`server/`, the net test's and the rally's server, with a SQLite high-score table) and
 `Samples_Tests` (`tests/`). `shared/` holds the code both sides use (the samples' messages, the rally rules).

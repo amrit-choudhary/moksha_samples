@@ -1,0 +1,31 @@
+{
+    "copy": [
+        "config/settings.ini",
+        "texture_data/atlas_backdrop.json",
+        "texture_data/atlas_blocks.json",
+        "texture_data/atlas_box.json",
+        "texture_data/atlas_fx.json",
+        "texture_data/atlas_well.json",
+        "audio/move.wav",
+        "audio/rotate.wav",
+        "audio/hard_drop.wav",
+        "audio/lock.wav",
+        "audio/clear1.wav",
+        "audio/clear2.wav",
+        "audio/clear3.wav",
+        "audio/quad.wav",
+        "audio/hold.wav",
+        "audio/level_up.wav",
+        "audio/game_over.wav",
+        "audio/start.wav",
+        "audio/pause.wav",
+        "audio/music.wav"
+    ],
+    "textures": [
+        "textures/prism/backdrop.png",
+        "textures/prism/blocks.png",
+        "textures/prism/box.png",
+        "textures/prism/fx.png",
+        "textures/prism/well.png"
+    ]
+}

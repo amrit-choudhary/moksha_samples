@@ -15,6 +15,7 @@ DIST = ROOT / "dist"
 
 # Folder, target, title and how to play. Rally and Net Test need a server, which a browser can't reach over raw sockets.
 SAMPLES = [
+    ("prism_drop", "Sample_PrismDrop", "Prism Drop", "Falling block puzzle. Drag to move, tap to rotate, swipe down to drop; or arrows, Z/X, Space and C."),
     ("tower_climb", "Sample_TowerClimb", "Tower Climb", "Endless climber. Click the left or right half, or use Left/Right or A/D."),
     ("survivors", "Sample_Survivors", "Survivors", "Sprite stress test. G toggles god mode, B spawns 1,000 enemies."),
     ("evolution", "Sample_Evolution", "Evolution", "Environment simulation with thousands of creatures. WASD moves the camera."),
