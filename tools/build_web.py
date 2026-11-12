@@ -21,6 +21,7 @@ SAMPLES = [
     ("evolution", "Sample_Evolution", "Evolution", "Environment simulation with thousands of creatures. WASD moves the camera."),
     ("ui_demo", "Sample_UIDemo", "UI Demo", "The engine's UI: panels, labels and buttons."),
     ("graphics_stress", "Sample_GraphicsStress", "Graphics Stress", "Spiral galaxy. ^ and v select a load, - and + change it."),
+    ("particle_life", "Sample_ParticleLife", "Particle Life", "CPU simulation load test. - and + change the particle count; R new rules."),
 ]
 
 INDEX = """<!doctype html>

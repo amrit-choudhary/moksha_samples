@@ -1,0 +1,9 @@
+{
+    "copy": [
+        "config/settings.ini",
+        "texture_data/atlas_glow.json"
+    ],
+    "textures": [
+        "textures/particle_glow.png"
+    ]
+}

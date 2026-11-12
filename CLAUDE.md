@@ -86,6 +86,7 @@ every frame, whatever the buttons say.
 Instances get nearer in draw order: depth is Less with writes on, so at equal depth only the first sprite would draw.
 iOS draws on a 60 Hz timer with one frame in flight, so its FPS falls in steps (60, 30, 20). Measure in Release.
 Below 1 fps a frame outlasts the renderer's 1 s GPU wait, so don't extend the size ladder past that.
+Works on Windows (2026-11-07, dev machine).
 
 ## Prism Drop (falling block puzzle)
 `Sample_PrismDrop`: portrait (450×800) falling block puzzle for iPhone and the web. The rules are pure code in
@@ -100,9 +101,22 @@ Its art, sounds and music are generated (made outside this repo); the piece colo
 (`game/prism_fx.*`), each slot with its own depth (see the scene header). The engine's `StopMusic` and mute do nothing
 yet, so pausing sets the master volume to 0.
 Verified 2026-11-07 (macOS M3, live engine): builds for macOS, web and iOS (unsigned); 20/20 tests; 2 min headless
-demo; Metal runs with no validation errors. Plays on the web (2026-11-07, mokshaengine.com). Not yet played on an
+demo; Metal runs with no validation errors. Plays on the web (2026-11-07, mokshaengine.com) and on Windows (2026-11-07). Not yet played on an
 iPhone. The first signed iOS build of
 its bundle id runs from Xcode.
+
+## Particle Life (CPU simulation load test)
+`Sample_ParticleLife`: landscape (1280×720) Particle Life, the CPU counterpart of Graphics Stress. Six particle types attract or
+repel each other by a random, asymmetric rule table (`game/particle_life_sim.*`, pure code, tested in `Samples_Tests`): a
+uniform grid with a counting sort each step, toroidal world, one step per frame on the main thread. The interaction radius
+shrinks with the count, so every particle has about 40 neighbours and the cost grows linearly. - and + (or -/= and the
+arrows) step through 1,000 to 100,000 particles, respawning from a fixed seed; R or every 45 s switches the rules. The UI
+shows FPS, the count and the simulation time. Particles are one additive instanced set (`SpriteBlend::Additive`, draw
+count = live particles), so crowds glow toward white; the glow texture is generated (stdlib Python, not kept).
+`Sample_ParticleLife_Headless` is a CPU benchmark: 120 fixed steps per count, logging ms per step and a checksum, then quits.
+Baseline (2026-11-12, Windows DX12, Release, dev machine): 5k 120 fps (vsync cap), sim 2.3 ms; 20k 113 fps, sim 7.9 ms;
+100k 22 fps, sim 40 ms. Headless: 0.63 ms at 1k, 8.2 ms at 20k, 38 ms at 100k. The Windows Vulkan dev build draws the same, and so does the web build (2026-11-12, Chrome on Windows, published
+to mokshaengine.com). Not yet run on Metal or an Android phone.
 
 ## Web
 Every offline sample plays in a browser. Verified 2026-11-04 in Safari on macOS (M3), Emscripten 6.0.13: Tower Climb, Survivors,
@@ -113,6 +127,9 @@ so they can't connect. `Sample_SystemsCheck` is a good first check: its network 
   changing the cook. A changed `MOKSHA_RENDERER` default needs `cmake --preset web --fresh`.
 - `python3 tools/build_web.py` builds the published samples into `dist/` with an index page. Serve it with
   `python3 -m http.server -d dist 8000` and open `http://localhost:8000/`; WebGPU needs `localhost` or HTTPS.
+- Windows (verified 2026-11-07, Prism Drop with audio): the `web` preset needs the Ninja generator (VS's own `ninja.exe` as
+  `CMAKE_MAKE_PROGRAM`), `CMAKE_CXX_SCAN_FOR_MODULES=OFF` (the scan can't find the `emdawnwebgpu` port's headers), and
+  the cook from `build-live/.../tools/cook/Debug/`. Run the scripts with `python`, not `python3` (a Store stub).
 - Reload with Cmd+Option+R after a build, or Safari may run the old files. Under Node, the headless twin
   (`Sample_SystemsCheck_Headless.js`) runs from its build folder with emsdk's Node.
 - The two socket errors in the console at startup are expected. Plan and research: the engine's `docs/web_port_plan.md`.
