@@ -120,7 +120,8 @@ void Samples::PrismFx::Shatter(float x, float y, const ME::Color& color, float p
     flash.width1 = flash.height1 = ScenePrismDrop::CELL * 2.4f;
     flash.maxLife = 0.25f;
     flash.color = PrismPalette::Lighten(color, 0.5f);
-    flash.color.a = 0.8f;
+    // A cleared row flashes from every cell at once, and the effects add up, so each flash is faint.
+    flash.color.a = 0.3f;
     flash.tile = PrismFxTiles::GLOW;
 }
 

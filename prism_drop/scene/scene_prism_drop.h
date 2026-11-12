@@ -1,8 +1,9 @@
 /**
  * Prism Drop scene. Plain sprites: the backdrop, the well and the hold and next boxes, drawn first and farthest.
  * Instanced set 0 holds every block (the well's cells, ghost, falling piece, previews and row flashes) in fixed slots;
- * set 1 is the particle pool, with ambient motes first, placed behind the well. Depth is Less with writes on, so
- * every instance gets its own depth, nearer with its slot, and a later slot blends over an earlier one.
+ * set 1 is the particle pool, with ambient motes first, placed behind the well, blended additively so effects glow.
+ * Depth is Less with writes on for blocks, so each block gets its own depth, nearer with its slot, and a later slot
+ * blends over an earlier one; the additive effects test depth but don't write it.
  * World units: the view is 800 tall (y -400 to 400) with a 30-unit cell; the width follows the window.
  */
 

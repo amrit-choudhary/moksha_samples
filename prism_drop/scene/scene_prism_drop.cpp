@@ -18,6 +18,9 @@ static constexpr float BLOCK_Z = 50.0f;
 static constexpr float EFFECT_Z = 20.0f;
 static constexpr float SLOT_Z_STEP = 0.004f;
 
+// The shard tile's gem fills 72% of the tile, inside its glow; shard sprites are drawn larger to keep the gem's size.
+static constexpr float SHARD_SPRITE_SCALE = 1.0f / 0.72f;
+
 // The backdrop image's aspect ratio, kept when it is stretched to cover the view.
 static constexpr float BACKDROP_ASPECT = 360.0f / 640.0f;
 
@@ -111,6 +114,9 @@ void Samples::ScenePrismDrop::BuildInstancedSpriteRenderers() {
     for (size_t i = 0; i < BLOCK_SLOTS; ++i) {
         instancedSpriteRenderers0[i] = ME::SpriteRenderer(0, 0, BLOCKS_TEXTURE, BLOCKS_TEXTURE, 0);
     }
+    // Effects glow: their light adds up where they overlap. Additive doesn't write depth, so the well still hides the
+    // ambient motes behind it, and effects never hide each other.
+    instancedSpriteBlend1 = ME::SpriteBlend::Additive;
     instancedSpriteRenderers1.count = FX_SLOTS;
     for (size_t i = 0; i < FX_SLOTS; ++i) {
         instancedSpriteRenderers1[i] = ME::SpriteRenderer(0, 0, FX_TEXTURE, FX_TEXTURE, 0);
@@ -191,9 +197,10 @@ void Samples::ScenePrismDrop::SetFx(size_t slot, float x, float y, float width, 
     if (slot >= FX_SLOTS) {
         return;
     }
+    const float scale = tile == PrismFxTiles::SHARD ? SHARD_SPRITE_SCALE : 1.0f;
     ME::Transform& transform = instancedSpriteTransforms1[slot];
     transform.SetPosition(x, y, FxDepth(slot));
-    transform.SetScale(width, height);
+    transform.SetScale(width * scale, height * scale);
     transform.SetRotation(0.0f, 0.0f, angle);
     ME::SpriteRenderer& renderer = instancedSpriteRenderers1[slot];
     renderer.atlasIndex = tile;

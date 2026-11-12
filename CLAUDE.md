@@ -99,7 +99,11 @@ The title screen is attract mode: `game/prism_autoplay.*` plays a dimmed, silent
 restarts, so `Sample_PrismDrop_Headless` runs locks, clears, level-ups and game overs without input.
 Its art, sounds and music are generated (made outside this repo); the piece colours in the block art match
 `game/prism_palette.h`. The music is a gapless 96 kbps MP3 (verified 2026-11-07). Set 0 holds every block in fixed slots, set 1 the particle pool
-(`game/prism_fx.*`), each slot with its own depth (see the scene header). The engine's `StopMusic` and mute do nothing
+(`game/prism_fx.*`), each slot with its own depth (see the scene header). Since 2026-11-12 the particle set is additive
+(`SpriteBlend::Additive`), so effects glow and add up; big rings and row flashes are kept faint for that. `fx.png` was then
+edited in this repo with ImageMagick: 128 px tiles (was 64, to soften the 900-unit level-up ring under point sampling),
+the ring and shard tiles redrawn (thin ring, gem with a halo at 72% of its tile, drawn larger by `SetFx`), and the soft
+tiles faded to zero alpha before their edges, so stacked additive sprites show no square borders. The engine's `StopMusic` and mute do nothing
 yet, so pausing sets the master volume to 0.
 Verified 2026-11-07 (macOS M3, live engine): builds for macOS, web and iOS (unsigned); 20/20 tests; 2 min headless
 demo; Metal runs with no validation errors. Plays on the web (2026-11-07, mokshaengine.com) and on Windows (2026-11-07). Not yet played on an

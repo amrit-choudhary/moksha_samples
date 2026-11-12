@@ -314,7 +314,7 @@ void Samples::GamePrismDrop::StartGame(bool bDemoGame) {
     prismUI->SetScore(0);
     prismUI->SetStats(board.GetLevel(), board.GetLines());
     Play(PrismSfx::START);
-    fx.Ring(0.0f, S::BOARD_BOTTOM + S::BOARD_HEIGHT_UNITS * 0.5f, WithAlpha(PrismPalette::CYAN, 0.8f), 60.0f, 700.0f,
+    fx.Ring(0.0f, S::BOARD_BOTTOM + S::BOARD_HEIGHT_UNITS * 0.5f, WithAlpha(PrismPalette::CYAN, 0.55f), 60.0f, 700.0f,
             0.7f);
     state = State::Playing;
     stateTime = 0.0f;
@@ -515,7 +515,8 @@ void Samples::GamePrismDrop::UpdateClearing(float deltaTime) {
                                PrismPalette::Piece(cell - 1u), power);
                 }
             }
-            fx.Ring(0.0f, CellY(static_cast<float>(row)), WithAlpha(ME::Color::White(), 0.7f), 40.0f, 520.0f, 0.5f);
+            // One ring per cleared row, and the effects add up, so each is kept faint.
+            fx.Ring(0.0f, CellY(static_cast<float>(row)), WithAlpha(ME::Color::White(), 0.45f), 40.0f, 520.0f, 0.5f);
         }
     }
     if (stateTime < CLEAR_SECONDS) {
@@ -710,7 +711,7 @@ void Samples::GamePrismDrop::AnnounceClear(const LockResult& result) {
         // The level-up line replaces the detail line.
         prismUI->Popup(headline, level, result.points, color, y);
         const float centerY = S::BOARD_BOTTOM + S::BOARD_HEIGHT_UNITS * 0.5f;
-        fx.Ring(0.0f, centerY, WithAlpha(PrismPalette::PINK, 0.9f), 80.0f, 900.0f, 0.9f);
+        fx.Ring(0.0f, centerY, WithAlpha(PrismPalette::PINK, 0.6f), 80.0f, 900.0f, 0.9f);
         fx.Twinkles(-prismScene->GetViewHalfWidth(), -S::VIEW_HALF_HEIGHT, prismScene->GetViewHalfWidth(),
                     S::VIEW_HALF_HEIGHT, PrismPalette::PINK, 50);
     }
