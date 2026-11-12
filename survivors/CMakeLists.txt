@@ -6,4 +6,5 @@ moksha_add_game(Sample_Survivors
         game_main.cpp
         game/game_survivors.cpp
         scene/scene_survivors.cpp
-    RES_LIST resources/res_list.json)
+    RES_LIST resources/res_list.json
+    ORIENTATION LANDSCAPE)

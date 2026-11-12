@@ -32,10 +32,13 @@ Per-machine `android` preset in `CMakeUserPresets.json` (inherits `live`; Ninja,
 `ANDROID_NDK_HOME`, `arm64-v8a`, `android-29`, `build-android/`, `MOKSHA_BUNDLE_ID_PREFIX` `com.moksha.samples`, tests
 off). It cooks with the `Moksha_Cook` in `build-live`, so build that first (`cmake --build --preset live --target
 Moksha_Cook`). Install and start one sample with `cmake --build --preset android --target Sample_<Name>_install`;
-read its log with `adb logcat -s Moksha`. Setup (SDK through the Android CLI, NDK r30, JDK 17+): the engine's
+read its log with `adb logcat -s Moksha`. Debug runs slowly on a phone; `android-release` (inherits `android`,
+`build-android-release/`, Release, still signed with the debug key) is for playing and measuring; its APKs pack the
+`.so` stripped (Wind Tunnel 17 MB → 3.5 MB), the unstripped one stays in the build folder for symbolizing crashes. Setup (SDK through the Android CLI, NDK r30, JDK 17+): the engine's
 `docs/android_port_plan.md`, step A0. Windows only so far; the Mac preset comes with the Mac's A0.
 Verified (2026-11-13, Adreno 619 phone, Vulkan 1.1): `Sample_GraphicsStress` draws as on DX12; `Sample_PrismDrop`
-plays with sound and touch. Until the engine's lesson 9 (surface recreation), going home and back leaves a sample
+plays with sound and touch. Landscape samples (`ORIENTATION LANDSCAPE`) start in landscape since the swapchain asks for
+IDENTITY and lets the compositor rotate (2026-11-13; real pre-rotation is the engine's lesson 9). Until the engine's lesson 9 (surface recreation), going home and back leaves a sample
 paused and rotating may break the picture.
 
 ## Systems check (platform bring-up)

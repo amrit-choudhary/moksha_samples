@@ -9,4 +9,5 @@ moksha_add_game(Sample_Evolution
         game/physics_scene_evolution.cpp
         scene/scene_evolution.cpp
         scene/scene_ui_evolution.cpp
-    RES_LIST resources/res_list.json)
+    RES_LIST resources/res_list.json
+    ORIENTATION LANDSCAPE)

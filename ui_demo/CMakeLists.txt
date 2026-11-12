@@ -5,4 +5,5 @@ moksha_add_game(Sample_UIDemo
         game_main.cpp
         game/game_ui_demo.cpp
         scene/scene_ui_demo.cpp
-    RES_LIST resources/res_list.json)
+    RES_LIST resources/res_list.json
+    ORIENTATION LANDSCAPE)
