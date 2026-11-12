@@ -1,7 +1,7 @@
 /**
  * Graphics Stress scene: a spiral galaxy baked once at startup. Instanced set 0 holds the clouds (large, soft, the
- * overdraw load), set 1 the stars (small, the instance load). Sets are sized once, so unused instances have zero scale
- * and draw no pixels. Plain sprites are giant stars, one draw call each. The camera's roll costs no per-sprite work;
+ * overdraw load), set 1 the stars (small, the instance load). Sets are sized once for the maximum; the draw counts
+ * limit the update, upload and draw to the instances shown. Plain sprites are giant stars, one draw call each. The camera's roll costs no per-sprite work;
  * moving stars go through the renderer's dirty-instance update every frame.
  */
 
@@ -25,7 +25,7 @@ class SceneGraphicsStress : public ME::Scene {
 
     virtual const char* GetDisplayName() const override;
 
-    // Show the first count instances of a set, marking only the ones that change. count is clamped to the maximum.
+    // Show the first count instances of a set (its draw count). count is clamped to the maximum.
     void SetStarCount(uint32_t count);
     void SetCloudCount(uint32_t count);
 
@@ -37,7 +37,7 @@ class SceneGraphicsStress : public ME::Scene {
         return cloudCount;
     }
 
-    // Multiplies every cloud's size. Fill load grows with its square; a change rewrites each visible cloud once.
+    // Multiplies every cloud's size. Fill load grows with its square; a change marks every cloud dirty once.
     void SetCloudScale(float scale);
 
     // Orbits the first count shown stars by deltaTime and marks them dirty, as a moving game object would.

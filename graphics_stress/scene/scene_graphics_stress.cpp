@@ -189,35 +189,19 @@ const char* Samples::SceneGraphicsStress::GetDisplayName() const {
 }
 
 void Samples::SceneGraphicsStress::SetStarCount(uint32_t count) {
-    const uint32_t newCount = count < MAX_STARS ? count : MAX_STARS;
-    for (uint32_t i = newCount; i < starCount; ++i) {
-        instancedSpriteTransforms1[i].SetScale(0.0f, 0.0f);
-        instancedSpriteRenderers1[i].bDirty = true;
-    }
-    for (uint32_t i = starCount; i < newCount; ++i) {
-        instancedSpriteTransforms1[i].SetScale(starSizes[i], starSizes[i]);
-        instancedSpriteRenderers1[i].bDirty = true;
-    }
-    starCount = newCount;
+    starCount = count < MAX_STARS ? count : MAX_STARS;
+    instancedSpriteDrawCount1 = starCount;
 }
 
 void Samples::SceneGraphicsStress::SetCloudCount(uint32_t count) {
-    const uint32_t newCount = count < MAX_CLOUDS ? count : MAX_CLOUDS;
-    for (uint32_t i = newCount; i < cloudCount; ++i) {
-        instancedSpriteTransforms0[i].SetScale(0.0f, 0.0f);
-        instancedSpriteRenderers0[i].bDirty = true;
-    }
-    for (uint32_t i = cloudCount; i < newCount; ++i) {
-        const float size = cloudSizes[i] * cloudScale;
-        instancedSpriteTransforms0[i].SetScale(size, size);
-        instancedSpriteRenderers0[i].bDirty = true;
-    }
-    cloudCount = newCount;
+    cloudCount = count < MAX_CLOUDS ? count : MAX_CLOUDS;
+    instancedSpriteDrawCount0 = cloudCount;
 }
 
 void Samples::SceneGraphicsStress::SetCloudScale(float scale) {
+    // Every cloud, shown or not: a hidden one stays dirty until the draw count reaches it, so it shows at this size.
     cloudScale = scale;
-    for (uint32_t i = 0; i < cloudCount; ++i) {
+    for (uint32_t i = 0; i < MAX_CLOUDS; ++i) {
         const float size = cloudSizes[i] * cloudScale;
         instancedSpriteTransforms0[i].SetScale(size, size);
         instancedSpriteRenderers0[i].bDirty = true;

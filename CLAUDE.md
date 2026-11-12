@@ -81,8 +81,9 @@ text (240 each). 1,000 plain sprites always orbit, one draw call each. The same 
 one-frame hitch, so read the FPS after it settles.
 5k clouds at 100% did not drop frames, so raise the size to reach the fill limit. Engine ceilings that keep some loads
 from reaching a drop: plain sprites stop at 1,000 (`MaxSpriteRendererCount`; the draw count is also fixed at startup, so it
-has no button), UI trees 512 elements, text 10k glyphs. The renderer copies both full instance buffers (105k × 96 bytes)
-every frame, whatever the buttons say.
+has no button), UI trees 512 elements, text 10k glyphs. Stars and clouds use the sets' draw counts (since 2026-11-12), so only the shown instances are
+updated, copied and drawn; before that, both full buffers (105k × 96 bytes) were copied every frame and hidden instances
+had zero scale, so readings at low loads aren't comparable across that change.
 Instances get nearer in draw order: depth is Less with writes on, so at equal depth only the first sprite would draw.
 iOS draws on a 60 Hz timer with one frame in flight, so its FPS falls in steps (60, 30, 20). Measure in Release.
 Below 1 fps a frame outlasts the renderer's 1 s GPU wait, so don't extend the size ladder past that.
