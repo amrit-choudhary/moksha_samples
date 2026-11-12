@@ -27,6 +27,17 @@ the engine's test harness: an engine change is checked by running the samples ag
   pushes the engine first, then bumps `MOKSHA_PIN` and pushes the samples.
 - The engine's conventions (above) apply here too.
 
+## Android
+Per-machine `android` preset in `CMakeUserPresets.json` (inherits `live`; Ninja, the NDK toolchain from
+`ANDROID_NDK_HOME`, `arm64-v8a`, `android-29`, `build-android/`, `MOKSHA_BUNDLE_ID_PREFIX` `com.moksha.samples`, tests
+off). It cooks with the `Moksha_Cook` in `build-live`, so build that first (`cmake --build --preset live --target
+Moksha_Cook`). Install and start one sample with `cmake --build --preset android --target Sample_<Name>_install`;
+read its log with `adb logcat -s Moksha`. Setup (SDK through the Android CLI, NDK r30, JDK 17+): the engine's
+`docs/android_port_plan.md`, step A0. Windows only so far; the Mac preset comes with the Mac's A0.
+Verified (2026-11-13, Adreno 619 phone, Vulkan 1.1): `Sample_GraphicsStress` draws as on DX12; `Sample_PrismDrop`
+plays with sound and touch. Until the engine's lesson 9 (surface recreation), going home and back leaves a sample
+paused and rotating may break the picture.
+
 ## Systems check (platform bring-up)
 `Sample_SystemsCheck` draws nothing (empty scenes) and logs PASS/FAIL/SKIP for config, time, timers, files, random
 and fixed point, physics, network, input and audio. Run it first on a platform whose renderer isn't ported yet; the
