@@ -36,6 +36,7 @@ add_subdirectory(rally)
 add_subdirectory(graphics_stress)
 add_subdirectory(prism_drop)
 add_subdirectory(particle_life)
+add_subdirectory(wind_tunnel)
 
 if(SAMPLES_BUILD_TESTS)
     add_subdirectory(tests)

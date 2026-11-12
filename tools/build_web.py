@@ -22,6 +22,7 @@ SAMPLES = [
     ("ui_demo", "Sample_UIDemo", "UI Demo", "The engine's UI: panels, labels and buttons."),
     ("graphics_stress", "Sample_GraphicsStress", "Graphics Stress", "Spiral galaxy. ^ and v select a load, - and + change it."),
     ("particle_life", "Sample_ParticleLife", "Particle Life", "CPU simulation load test. - and + change the particle count; R new rules."),
+    ("wind_tunnel", "Sample_WindTunnel", "Wind Tunnel", "2D fluid demo. Drag the obstacle; 1-6 shapes, N airfoils, Up/Down angle, C view, S streamlines."),
 ]
 
 INDEX = """<!doctype html>

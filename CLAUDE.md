@@ -123,6 +123,23 @@ Baseline (2026-11-12, Windows DX12, Release, dev machine): 5k 120 fps (vsync cap
 100k 22 fps, sim 40 ms. Headless: 0.63 ms at 1k, 8.2 ms at 20k, 38 ms at 100k. The Windows Vulkan dev build draws the same, and so does the web build (2026-11-12, Chrome on Windows, published
 to mokshaengine.com). Not yet run on Metal or an Android phone.
 
+## Wind Tunnel (interactive fluid demo)
+`Sample_WindTunnel`: landscape (1280×720) 2D wind tunnel, a port of Ten Minute Physics #17 (Matthias Müller, MIT): Eulerian
+MAC grid, red-black Gauss-Seidel pressure solve (40 iterations, overrelaxation 1.9), semi-Lagrangian advection, optional
+vorticity confinement (V). Inviscid and tuned for looks, not accuracy. Pure code in `game/wind_tunnel_sim.*` and
+`game/wind_tunnel_shapes.*`, tested in `Samples_Tests`. The obstacle is an outline (polygons, filled into the grid by
+scanlines each step) that is dragged and turned; its cells carry its velocity. Shapes (1-6): circle, square, plate, NACA
+airfoil (N steps through 4-digit and standard 5-digit codes, pivot at quarter chord; formulas as in crgimenes/kutta), a
+made-up aircraft and car. Lift and drag coefficients come from the pressure on the obstacle's faces. Views (C): smoke
+tinted by pressure (blue suction, orange push), smoke, pressure, speed; S streamlines (additive set 1), T band or rake
+of smoke, H 112, 180 or 240 rows (default the top). No runtime textures yet, so the field is instanced set 0, one quad
+per cell, which caps the grid at the engine's 100k instances: the top level is cut to fit (421×237 at 16:9).
+Release (2026-11-12, Windows DX12, dev machine): 117 fps at 421×237, sim 9.2 ms per step (5.4 ms at 320×180, 2.3 ms
+at 199×112), about 0.8 of a core; the pressure solve was 14 of 15 ms before red-black ordering. Debug is ~10x slower
+(53 ms at 320×180), so play in Release.
+`Sample_WindTunnel_Headless` drags the obstacle on a fixed path, 300 steps per grid, and logs ms per step and a checksum
+(Debug and Release match: `5170D212`, `C8DEDEA1`, `9419A24B` at 421×237). Not yet run on the web, Metal or a phone.
+
 ## Web
 Every offline sample plays in a browser. Verified 2026-11-04 in Safari on macOS (M3), Emscripten 6.0.13: Tower Climb, Survivors,
 Evolution, UI Demo and Graphics Stress, with input, audio and saves. Rally and Net Test build, but browsers have no raw sockets,
