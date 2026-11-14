@@ -22,8 +22,9 @@ class ColonySettings {
    public:
     uint32_t followerSamples = 32;  // sensing samples per step
     uint32_t explorerSamples = 4;
-    bool bCollisions = true;  // ants push each other apart
-    uint32_t antTarget = 0;   // the population the Colony system keeps, per colony
+    bool bCollisions = true;     // ants push each other apart
+    float explorerShare = 0.1f;  // the chance a new ant is an explorer
+    uint32_t antTarget = 0;      // the population the Colony system keeps, per colony
 };
 
 class ColonySpawn {
@@ -54,23 +55,26 @@ class ColonyPending {
 };
 
 namespace ColonyTuning {
-constexpr float ANT_SPEED = 50.0f;          // units per second
-constexpr float SENSE_RANGE = 40.0f;        // units
-constexpr float SENSE_MIN = 4.0f;           // samples start a cell away, off the ant's own cell
-constexpr float SENSE_CONE = 1.5707963f;    // radians, centred on the heading
-constexpr float TURN_RATE = 9.0f;           // radians per second toward the sensed target
-constexpr float STEER_NOISE = 0.08f;        // radians per step, either way
-constexpr uint32_t MARK_PERIOD_STEPS = 15;  // one marker every 0.25 s at 60 steps per second
-constexpr float MARKER_FALLOFF = 0.05f;     // strength = exp(-MARKER_FALLOFF × walkTime)
-constexpr float MARKER_MIN = 0.02f;         // weaker markers aren't dropped
-constexpr float MARKER_LIFETIME = 30.0f;    // seconds for an untouched marker to fade to 1/e
-constexpr float COLLISION_DISTANCE = 2.0f;  // two ants of radius 1
-constexpr float MAX_PUSH = 1.0f;            // units per step, all neighbours together
-constexpr float MARKER_FLOOR = 0.001f;
-constexpr uint32_t SPAWN_COST = 4;             // food per ant, from the nest's stock
-constexpr uint32_t MAX_SPAWNS_PER_STEP = 200;  // per colony; at most ColonyPending::MAX_SPAWNS in all
-constexpr uint32_t MAX_DEATHS_PER_STEP =
-    2'000;  // per colony; at most ColonyPending::MAX_DEATHS in all      // fading markers below this become 0
+constexpr float ANT_SPEED = 50.0f;               // units per second
+constexpr float SENSE_RANGE = 40.0f;             // units
+constexpr float SENSE_MIN = 4.0f;                // samples start a cell away, off the ant's own cell
+constexpr float SENSE_CONE = 1.5707963f;         // radians, centred on the heading
+constexpr float TURN_RATE = 9.0f;                // radians per second toward the sensed target
+constexpr float STEER_NOISE = 0.08f;             // radians per step, either way
+constexpr uint32_t MARK_PERIOD_STEPS = 15;       // one marker every 0.25 s at 60 steps per second
+constexpr float MARKER_FALLOFF = 0.05f;          // strength = exp(-MARKER_FALLOFF × walkTime)
+constexpr float MARKER_MIN = 0.02f;              // weaker markers aren't dropped
+constexpr float MARKER_LIFETIME = 30.0f;         // seconds for an untouched marker to fade to 1/e
+constexpr float COLLISION_DISTANCE = 2.0f;       // two ants of radius 1
+constexpr float MAX_PUSH = 1.0f;                 // units per step, all neighbours together
+constexpr float MARKER_FLOOR = 0.001f;           // fading markers below this become 0
+constexpr uint32_t SPAWN_COST = 4;               // food per ant, from the nest's stock
+constexpr uint32_t MAX_SPAWNS_PER_STEP = 200;    // per colony; at most ColonyPending::MAX_SPAWNS in all
+constexpr uint32_t MAX_DEATHS_PER_STEP = 2'000;  // per colony; at most ColonyPending::MAX_DEATHS in all
+constexpr float STUCK_CHECK_TIME = 4.0f;         // seconds between progress checks
+constexpr float STUCK_DISTANCE = 30.0f;          // moving less than this between checks is stuck (200 when free)
+constexpr float STUCK_WANDER_TIME = 2.0f;        // seconds a stuck ant wanders, ignoring what it senses
+constexpr float STUCK_WIPE = 0.9f;               // a stuck ant multiplies the markers it walks over by this, per step
 }  // namespace ColonyTuning
 
 namespace ColonySystems {
@@ -80,7 +84,9 @@ namespace ColonySystems {
 void UpdateAntGrid(const ColonyAnts& ants, ColonyAntGrid& grid, uint32_t begin, uint32_t end);
 
 // Sense: samples points in a cone ahead and turns each ant toward food or its nest in sight, else the strongest marker
-// it follows, else wanders. Writes each ant's own heading. Uneven cost: followers sample more, rays vary in length.
+// it follows, else wanders. Every STUCK_CHECK_TIME it checks the ant's progress: one that moved less than
+// STUCK_DISTANCE turns a random way and wanders for STUCK_WANDER_TIME without sensing. Writes each ant's own heading
+// and stuck state. Uneven cost: followers sample more, rays vary in length, stuck ants sample nothing.
 void UpdateSensing(const ColonyWorld& world, ColonyAnts& ants, const ColonySettings& settings, ME::Random& random,
                    float deltaTime, uint32_t begin, uint32_t end);
 
@@ -95,7 +101,8 @@ void UpdateMovement(const ColonyWorld& world, ColonyAnts& ants, const ColonyAntG
 void UpdateClaims(ColonyWorld& world, ColonyAnts& ants, uint32_t begin, uint32_t end);
 
 // Mark: every MARK_PERIOD_STEPS (staggered by slot), each ant raises its cell's marker to its strength: toHome while
-// searching, toFood while carrying. Shared write: marker cells (max).
+// searching, toFood while carrying. A stuck ant instead multiplies both of its cell's markers by STUCK_WIPE every
+// step, which wipes trails a new wall blocks. Shared write: marker cells (max, and the wipe).
 void UpdateMarkers(ColonyWorld& world, const ColonyAnts& ants, uint32_t stepIndex, uint32_t begin, uint32_t end);
 
 // Fade: multiplies the markers of cells [begin, end) by decay, every colony's; below MARKER_FLOOR they become 0.
@@ -103,8 +110,8 @@ void UpdateMarkers(ColonyWorld& world, const ColonyAnts& ants, uint32_t stepInde
 void UpdateFade(ColonyWorld& world, float decay, uint32_t begin, uint32_t end);
 
 // Colony: for colonies [begin, end), asks for spawns in the nest while the colony is below antTarget (each costs
-// SPAWN_COST from the stock if the stock has it, else it is free and counted), or for deaths of its highest slots while
-// above. Writes nest stock and spend counts, and the pending list. Serial and small.
+// SPAWN_COST from the stock if the stock has it, else it is free and counted; explorers by explorerShare), or for
+// deaths of its highest slots while above. Writes nest stock and spend counts, and the pending list. Serial and small.
 void UpdateColonies(ColonyWorld& world, const ColonyAnts& ants, const ColonySettings& settings, ME::Random& random,
                     ColonyPending& pending, uint32_t begin, uint32_t end);
 

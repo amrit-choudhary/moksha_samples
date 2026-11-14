@@ -2,7 +2,7 @@
     "name": "open",
     "seed": 1,
     "ants": 2000,
-    "steps": 0,
+    "steps": 36000,
     "nest": { "x": 240, "y": 360, "radius": 20 },
     "walls": [],
     "food": [

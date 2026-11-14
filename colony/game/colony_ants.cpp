@@ -9,6 +9,10 @@ Samples::ColonyAnts::~ColonyAnts() {
     delete[] prevY;
     delete[] heading;
     delete[] walkTime;
+    delete[] progressX;
+    delete[] progressY;
+    delete[] progressTime;
+    delete[] stuckTime;
     delete[] carrying;
     delete[] colony;
     delete[] role;
@@ -27,6 +31,10 @@ bool Samples::ColonyAnts::Init() {
     prevY = new float[MAX_ANTS];
     heading = new float[MAX_ANTS];
     walkTime = new float[MAX_ANTS];
+    progressX = new float[MAX_ANTS];
+    progressY = new float[MAX_ANTS];
+    progressTime = new float[MAX_ANTS];
+    stuckTime = new float[MAX_ANTS];
     carrying = new uint16_t[MAX_ANTS];
     colony = new uint8_t[MAX_ANTS];
     role = new AntRole[MAX_ANTS];
@@ -65,6 +73,10 @@ uint32_t Samples::ColonyAnts::Spawn(uint8_t inColony, float inX, float inY, floa
     prevY[slot] = inY;
     heading[slot] = inHeading;
     walkTime[slot] = 0.0f;
+    progressX[slot] = inX;
+    progressY[slot] = inY;
+    progressTime[slot] = 0.0f;
+    stuckTime[slot] = 0.0f;
     carrying[slot] = 0;
     colony[slot] = inColony;
     role[slot] = inRole;

@@ -10,6 +10,7 @@ moksha_add_game(Sample_Colony
         game/colony_scenario.cpp
         game/colony_step.cpp
         game/colony_systems.cpp
+        game/colony_timing.cpp
         game/colony_world.cpp
         scene/scene_colony.cpp
         scene/scene_ui_colony.cpp

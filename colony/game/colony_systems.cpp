@@ -69,6 +69,27 @@ void Samples::ColonySystems::UpdateSensing(const ColonyWorld& world, ColonyAnts&
         const float x = ants.x[slot];
         const float y = ants.y[slot];
         float heading = ants.heading[slot];
+
+        // Progress check: an ant that barely moved since the last one is stuck, and turns a random way.
+        ants.progressTime[slot] += deltaTime;
+        if (ants.progressTime[slot] >= STUCK_CHECK_TIME) {
+            const float dx = x - ants.progressX[slot];
+            const float dy = y - ants.progressY[slot];
+            if (dx * dx + dy * dy < STUCK_DISTANCE * STUCK_DISTANCE) {
+                ants.stuckTime[slot] = STUCK_WANDER_TIME;
+                heading = RandomFloat(random) * TWO_PI - PI;
+            }
+            ants.progressX[slot] = x;
+            ants.progressY[slot] = y;
+            ants.progressTime[slot] = 0.0f;
+        }
+        if (ants.stuckTime[slot] > 0.0f) {
+            ants.stuckTime[slot] = ants.stuckTime[slot] > deltaTime ? ants.stuckTime[slot] - deltaTime : 0.0f;
+            heading += (RandomFloat(random) - 0.5f) * 2.0f * STEER_NOISE;
+            ants.heading[slot] = WrapAngle(heading);
+            continue;
+        }
+
         const uint32_t colony = ants.colony[slot];
         const bool bSearching = ants.task[slot] == AntTask::ToFood;
         const float* markers = bSearching ? world.GetToFood(colony) : world.GetToHome(colony);
@@ -247,7 +268,18 @@ void Samples::ColonySystems::UpdateMarkers(ColonyWorld& world, const ColonyAnts&
                                            uint32_t begin, uint32_t end) {
     using namespace ColonyTuning;
     for (uint32_t slot = begin; slot < end; ++slot) {
-        if (ants.alive[slot] == 0 || (stepIndex + slot) % MARK_PERIOD_STEPS != 0) {
+        if (ants.alive[slot] == 0) {
+            continue;
+        }
+        if (ants.stuckTime[slot] > 0.0f) {
+            // Shared write: the wipe.
+            const uint32_t colony = ants.colony[slot];
+            const uint32_t cell = ColonyWorld::CellAt(ants.x[slot], ants.y[slot]);
+            world.GetToHome(colony)[cell] *= STUCK_WIPE;
+            world.GetToFood(colony)[cell] *= STUCK_WIPE;
+            continue;
+        }
+        if ((stepIndex + slot) % MARK_PERIOD_STEPS != 0) {
             continue;
         }
         const float strength = std::exp(-MARKER_FALLOFF * ants.walkTime[slot]);
@@ -304,7 +336,7 @@ void Samples::ColonySystems::UpdateColonies(ColonyWorld& world, const ColonyAnts
                 spawn.y = nest.y + std::sin(angle) * distance;
                 spawn.heading = RandomFloat(random) * TWO_PI - PI;
                 spawn.colony = static_cast<uint8_t>(colony);
-                spawn.role = AntRole::Follower;
+                spawn.role = RandomFloat(random) < settings.explorerShare ? AntRole::Explorer : AntRole::Follower;
             }
         } else if (count > settings.antTarget) {
             // The highest slots go first, so the slot end shrinks with the count.

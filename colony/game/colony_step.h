@@ -2,7 +2,8 @@
  * Colony simulation and its schedule. ColonySim owns the world, the ants, the ant grid and the pending list; Step()
  * advances them by STEP_TIME by calling each system once over its full range, in the design's order: AntGrid, Sense,
  * Move, Claims, Mark, Fade, Colony, Apply (Claims before Mark, as Mark reads what Claims changes; Colony only queues
- * spawns and deaths, which Apply makes at the end). This is the only file threading will change.
+ * spawns and deaths, which Apply makes at the end), timing each with std::chrono::steady_clock. This is the only file
+ * threading will change.
  * Pure code, no engine systems: one ME::Random, seeded by Start, serves every system.
  */
 
@@ -12,6 +13,7 @@
 
 #include "colony/game/colony_ants.h"
 #include "colony/game/colony_systems.h"
+#include "colony/game/colony_timing.h"
 #include "colony/game/colony_world.h"
 #include "moksha/shared/random/random_engine.h"
 
@@ -30,12 +32,29 @@ class ColonySim {
     // Allocates the world, ants and ant grid. False if called twice.
     bool Init();
 
-    // Seeds the random generator, removes every ant and spawns antCount searching followers in colony 0's nest at no
-    // cost (none if the world has no colony); antCount becomes the target. Call after building the map into GetWorld().
+    // Seeds the random generator, removes every ant and spawns antCount searching ants in colony 0's nest at no cost
+    // (none if the world has no colony), explorers by the explorer share; antCount becomes the target. Call after
+    // building the map into GetWorld().
     void Start(uint32_t antCount, uint32_t seed);
 
-    // Advances the simulation by STEP_TIME. With invariant checks on, checks them after the step.
+    // Sets the explorer share and draws every live ant's role again with it.
+    void SetExplorerShare(float share);
+
+    // Changes walls during a run (timed events): as ColonyWorld::SetWalls, then moves every ant caught in a new wall
+    // to the nearest open cell (or removes it, its food going to its nest, if none is near). Food removed by the wall
+    // leaves the conserved total.
+    void SetWalls(float x0, float y0, float x1, float y1, bool bWall);
+
+    // Adds food during a run (timed events), as ColonyWorld::AddFood; the conserved total grows by what was added.
+    void AddFood(float x, float y, float radius, uint16_t amount);
+
+    // Advances the simulation by STEP_TIME. With invariant checks on, checks them after the step (untimed).
     void Step();
+
+    // The last step's time per system in ms, COLONY_STEP_TIMERS values in ColonyTimer order.
+    const float* GetStepTimes() const {
+        return stepMs;
+    }
 
     // Checks the design's invariants: food conserved (cells + carried + stock + spent = the total at Start), food
     // per cell within MAX_FOOD, markers finite and in [0, 1], live ants inside the world and outside walls, and the
@@ -45,6 +64,9 @@ class ColonySim {
     // On by default in Debug builds. The first failure is kept, and checks stop after it.
     void SetCheckInvariants(bool bCheck) {
         bCheckInvariants = bCheck;
+    }
+    bool IsCheckingInvariants() const {
+        return bCheckInvariants;
     }
 
     // The first invariant that failed during Step, or null.
@@ -73,12 +95,28 @@ class ColonySim {
         return stepIndex;
     }
 
+    // The step at which the world's cells first had no food left (checked every HARVEST_CHECK_STEPS), or NO_STEP.
+    uint32_t GetHarvestStep() const {
+        return harvestStep;
+    }
+
+    static constexpr uint32_t NO_STEP = 0xFFFFFFFF;
+    static constexpr uint32_t HARVEST_CHECK_STEPS = 60;
+
     // Food in the world at Start, which every later step must account for.
     uint64_t GetStartFood() const {
         return startFood;
     }
 
    private:
+    // A role drawn with the explorer share.
+    AntRole DrawRole();
+
+    // Moves an ant in a wall to the nearest open cell within RELOCATE_CELLS; false if there is none.
+    bool Relocate(uint32_t slot);
+
+    static constexpr int32_t RELOCATE_CELLS = 24;
+
     ColonyWorld world;
     ColonyAnts ants;
     ColonyAntGrid antGrid;
@@ -88,6 +126,8 @@ class ColonySim {
     uint32_t stepIndex = 0;
     float fadeDecay = 1.0f;  // per step
     uint64_t startFood = 0;
+    uint32_t harvestStep = NO_STEP;
+    float stepMs[COLONY_STEP_TIMERS] = {};
 
 #ifdef NDEBUG
     bool bCheckInvariants = false;

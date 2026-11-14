@@ -126,8 +126,8 @@ The step runs these systems in this order. "Kind" is what threading will do with
 | # | System | Reads | Writes | Kind |
 |---|---|---|---|---|
 | 1 | **AntGrid** | ant positions | ant grid (counting sort of ant ids by 8×8-unit cell) | **Serial** (prefix sum); later a parallel count plus a serial scan |
-| 2 | **Sense** | ants, walls, markers, food, ant grid (v2 enemies) | ant heading, task intent | Parallel-for, **uneven cost** (sample count by role, ray length near walls) |
-| 3 | **Move** | ants, `prev` positions, ant grid, walls | ant `x, y`, `progress*` | Parallel-for, neighbour reads |
+| 2 | **Sense** | ants, walls, markers, food, ant grid (v2 enemies) | ant heading, task intent, stuck state (`progress*`, `stuckTime`) | Parallel-for, **uneven cost** (sample count by role, ray length near walls, stuck ants skip sensing) |
+| 3 | **Move** | ants, `prev` positions, ant grid, walls | ant `x, y`, heading (bounces), `walkTime` | Parallel-for, neighbour reads |
 | 4 | **Claims** | ants, food cells (v2: enemies) | food cells, ant `task`, `carrying`, `walkTime`, colony stock (v2: enemy energy) | **Claims on a shared resource** (section 7) |
 | 5 | **Mark** | ant position, `task`, `walkTime` | **markers** (any cell) | **Scatter write** (section 7) |
 | 6 | **Fade** | markers | markers | Parallel-for over cells; must follow 5 |

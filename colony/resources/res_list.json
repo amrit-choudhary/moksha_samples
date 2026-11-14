@@ -2,7 +2,10 @@
     "copy": [
         "config/settings.ini",
         "texture_data/atlas_cell.json",
-        "scenarios/open.json"
+        "scenarios/open.json",
+        "scenarios/four_food.json",
+        "scenarios/wall.json",
+        "scenarios/shortcut.json"
     ],
     "textures": [
         "textures/colony_cell.png"

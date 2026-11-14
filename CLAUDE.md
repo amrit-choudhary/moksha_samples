@@ -154,6 +154,33 @@ at 199×112), about 0.8 of a core; the pressure solve was 14 of 15 ms before red
 `Sample_WindTunnel_Headless` drags the obstacle on a fixed path, 300 steps per grid, and logs ms per step and a checksum
 (Debug and Release match: `5170D212`, `C8DEDEA1`, `9419A24B` at 421×237). Not yet run on the web, Metal or a phone.
 
+## Colony (multithreading test bed)
+`Sample_Colony`: landscape (1280×720) ant colony, built to measure the engine's coming multithreading before and after
+(design and rules: `colony/colony_design.md`; v1 = one colony, Simulation mode). No threading code: every system is a
+range function in `game/colony_systems.*`, called once with the full range from `game/colony_step.*`, the only file
+threading will change. Pure code in `game/colony_{world,ants,systems,step,timing}.*`, tested in `Samples_Tests`;
+`colony_scenario.*` loads `resources/scenarios/*.json` (Open, Four food, Wall, Shortcut; timed events). Steps run in
+`Update`, `steps per frame` of 1/60 s, not in `FixedUpdate`. The Ants setting is the population target (spawns cost 4
+food when the stock has it). Debug checks the invariants every step (food conserved, ant grid, ants out of walls).
+Load panel (Up/Down, -/+): scenario, ants 1k-100k, steps/frame, follower samples, explorers, collisions, drawing. Space
+pause, R restart, N next, Tab stats (per system median/max/share, serial, game and engine ms), L logs them, wheel zoom
+(the engine's `GetMouseWheelDelta`), WASD pan. Measure in Release with `[window] vsync=0`; the `live-release` build
+preset is per machine. `Sample_Colony_Headless` is the game-side benchmark: 21 runs (each scenario at 2k/12k/40k ants,
+then the ant ladder on Open), 4 steps per frame, 600 measured steps (300 from 70k ants) after a 2 s warm-up, logging
+`colony_bench` blocks; its frame and engine times include the headless driver's sleep (`--fixedStepFPS=1000` shortens
+it). Frame time is measured between `Update` calls, since the engine clamps `deltaTime` to 0.25 s. The core count is
+left out of the log on purpose.
+Baseline (2026-11-14, Windows, Release, headless, `--fixedStepFPS=1000`, dev machine, 1 thread, 4 steps per frame;
+two runs agree within 2%): ms per step median 0.58 at 1k, 1.16 at 2k, 1.8 at 4k, 3.8 at 8k, 6.1 at 12k, 10.6 at 20k,
+22.5 at 40k (about 0.55 µs per ant). Sense is 65-83% of the frame, Move most of the rest (1.37 ms at 12k, 6.8 at 40k);
+serial (grid; colony and apply round to 0) 0.16 ms at 40k, under 1%; Fade 0.006 ms; headless engine time 0.14-0.9 ms
+per frame. The four scenarios cost the same at a given load. The list took 415 s.
+70k and 100k are not measured yet: every run starts its ants in a radius-10 disk at the nest, where each ant's
+neighbour cells hold the whole colony, so Move is quadratic for the first simulated seconds (single steps of 1 s at
+40k, 6.6 s at 100k), and the 2 s real-time warm-up ends inside that crowd at 70k and up (their medians, 56 and 101 ms,
+include it). The fix is a warm-up that also lasts a number of simulated steps. `food_per_min` means little in runs this
+short. Still to check for v1: lanes at 2k on Open, Wall harvests, invariants over the headless list (a Debug run).
+
 ## Web
 Every offline sample plays in a browser. Verified 2026-11-04 in Safari on macOS (M3), Emscripten 6.0.13: Tower Climb, Survivors,
 Evolution, UI Demo and Graphics Stress, with input, audio and saves. Rally and Net Test build, but browsers have no raw sockets,

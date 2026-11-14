@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <string>
 
+#include "colony/game/colony_step.h"
 #include "colony/game/colony_world.h"
 #include "moksha/logging/logging.h"
 #include "moksha/shared/file_io/vfs.h"
@@ -40,9 +41,41 @@ bool ReadRect(const cJSON* array, Samples::ColonyRect& out) {
     return true;
 }
 
+// A food source object: x, y, radius, amount per cell (capped at MAX_FOOD).
+void ReadFoodSource(const cJSON* object, Samples::ColonyFoodSource& out) {
+    out.x = ReadFloat(object, "x", 0.0f);
+    out.y = ReadFloat(object, "y", 0.0f);
+    out.radius = ReadFloat(object, "radius", 0.0f);
+    const uint32_t amount = ReadUint(object, "amount", 0);
+    out.amount =
+        static_cast<uint16_t>(amount < Samples::ColonyWorld::MAX_FOOD ? amount : Samples::ColonyWorld::MAX_FOOD);
+}
+
+// An event object: step, event (addWall, removeWall, addFood), and its rect or food fields. False if malformed.
+bool ReadEvent(const cJSON* object, Samples::ColonyEvent& out) {
+    const cJSON* type = cJSON_GetObjectItem(object, "event");
+    if (!cJSON_IsString(type)) {
+        return false;
+    }
+    out.step = ReadUint(object, "step", 0);
+    const std::string name = type->valuestring;
+    if (name == "addWall" || name == "removeWall") {
+        out.type = name == "addWall" ? Samples::ColonyEventType::AddWall : Samples::ColonyEventType::RemoveWall;
+        return ReadRect(cJSON_GetObjectItem(object, "rect"), out.rect);
+    }
+    if (name == "addFood") {
+        out.type = Samples::ColonyEventType::AddFood;
+        ReadFoodSource(object, out.food);
+        return true;
+    }
+    return false;
+}
+
 }  // namespace
 
 bool Samples::ColonyScenario::Load(const char* path) {
+    // Every field starts from its default, so nothing carries over from the scenario loaded before.
+    *this = ColonyScenario();
     std::string text;
     if (!ME::Vfs::ReadText(ME::FileRoot::Resources, path, text)) {
         ME::LogError("Colony: can't read scenario ", path);
@@ -85,13 +118,22 @@ bool Samples::ColonyScenario::Load(const char* path) {
             if (foodSourceCount >= MAX_FOOD_SOURCES) {
                 break;
             }
-            ColonyFoodSource& out = foodSources[foodSourceCount];
-            out.x = ReadFloat(source, "x", 0.0f);
-            out.y = ReadFloat(source, "y", 0.0f);
-            out.radius = ReadFloat(source, "radius", 0.0f);
-            const uint32_t amount = ReadUint(source, "amount", 0);
-            out.amount = static_cast<uint16_t>(amount < ColonyWorld::MAX_FOOD ? amount : ColonyWorld::MAX_FOOD);
+            ReadFoodSource(source, foodSources[foodSourceCount]);
             ++foodSourceCount;
+        }
+
+        eventCount = 0;
+        const cJSON* eventArray = cJSON_GetObjectItem(json, "events");
+        const cJSON* event = nullptr;
+        cJSON_ArrayForEach(event, eventArray) {
+            if (eventCount >= MAX_EVENTS) {
+                break;
+            }
+            if (ReadEvent(event, events[eventCount])) {
+                ++eventCount;
+            } else {
+                ME::LogWarning("Colony: scenario ", path, " has an event it can't read; skipped");
+            }
         }
     }
 
@@ -109,4 +151,26 @@ void Samples::ColonyScenario::Build(ColonyWorld& world) const {
         world.AddFood(source.x, source.y, source.radius, source.amount);
     }
     world.AddColony(nestX, nestY, nestRadius);
+}
+
+void Samples::ColonyScenario::ApplyEvents(uint32_t step, ColonySim& sim) const {
+    for (uint32_t i = 0; i < eventCount; ++i) {
+        const ColonyEvent& event = events[i];
+        if (event.step != step) {
+            continue;
+        }
+        switch (event.type) {
+            case ColonyEventType::AddWall:
+            case ColonyEventType::RemoveWall: {
+                const bool bWall = event.type == ColonyEventType::AddWall;
+                sim.SetWalls(event.rect.x0, event.rect.y0, event.rect.x1, event.rect.y1, bWall);
+                ME::Log("Colony: step ", step, ", ", bWall ? "wall added" : "wall removed");
+                break;
+            }
+            case ColonyEventType::AddFood:
+                sim.AddFood(event.food.x, event.food.y, event.food.radius, event.food.amount);
+                ME::Log("Colony: step ", step, ", food added");
+                break;
+        }
+    }
 }

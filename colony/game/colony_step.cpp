@@ -1,11 +1,14 @@
 #include "colony/game/colony_step.h"
 
+#include <chrono>
 #include <cmath>
 #include <cstring>
 
 namespace {
 
 constexpr float PI = 3.14159265f;
+
+using Clock = std::chrono::steady_clock;
 
 }  // namespace
 
@@ -31,6 +34,7 @@ void Samples::ColonySim::Start(uint32_t antCount, uint32_t seed) {
     stepIndex = 0;
     settings.antTarget = antCount;
     invariantFailure = nullptr;
+    harvestStep = NO_STEP;
 
     startFood = world.CountFood();
     for (uint32_t colony = 0; colony < world.GetColonyCount(); ++colony) {
@@ -49,7 +53,7 @@ void Samples::ColonySim::Start(uint32_t antCount, uint32_t seed) {
         const float heading = static_cast<float>(random.NextDouble()) * 2.0f * PI - PI;
         const float x = nest.x + std::cos(angle) * distance;
         const float y = nest.y + std::sin(angle) * distance;
-        if (ants.Spawn(0, x, y, heading, AntRole::Follower) == ColonyAnts::NO_SLOT) {
+        if (ants.Spawn(0, x, y, heading, DrawRole()) == ColonyAnts::NO_SLOT) {
             break;
         }
     }
@@ -58,22 +62,109 @@ void Samples::ColonySim::Start(uint32_t antCount, uint32_t seed) {
 void Samples::ColonySim::Step() {
     const uint32_t antEnd = ants.GetSlotEnd();
 
+    // Each system's wall-clock time, in ColonyTimer order.
+    Clock::time_point last = Clock::now();
+    auto lap = [&](ColonyTimer timer) {
+        const Clock::time_point now = Clock::now();
+        stepMs[static_cast<uint32_t>(timer)] = std::chrono::duration<float, std::milli>(now - last).count();
+        last = now;
+    };
+
     ColonySystems::UpdateAntGrid(ants, antGrid, 0, antEnd);
+    lap(ColonyTimer::AntGrid);
     ColonySystems::UpdateSensing(world, ants, settings, random, STEP_TIME, 0, antEnd);
+    lap(ColonyTimer::Sense);
     ColonySystems::UpdateMovement(world, ants, antGrid, settings, STEP_TIME, 0, antEnd);
+    lap(ColonyTimer::Move);
     ColonySystems::UpdateClaims(world, ants, 0, antEnd);
+    lap(ColonyTimer::Claims);
     ColonySystems::UpdateMarkers(world, ants, stepIndex, 0, antEnd);
+    lap(ColonyTimer::Mark);
     ColonySystems::UpdateFade(world, fadeDecay, 0, ColonyWorld::CELL_COUNT);
+    lap(ColonyTimer::Fade);
     pending.Clear();
     ColonySystems::UpdateColonies(world, ants, settings, random, pending, 0, world.GetColonyCount());
+    lap(ColonyTimer::Colony);
     ColonySystems::ApplyPending(world, ants, pending, 0, pending.deathCount + pending.spawnCount);
+    lap(ColonyTimer::ApplySerial);
     ColonySystems::UpdatePrevPositions(ants, 0, ants.GetSlotEnd());
+    lap(ColonyTimer::ApplyCopy);
 
     ++stepIndex;
 
+    if (harvestStep == NO_STEP && stepIndex % HARVEST_CHECK_STEPS == 0 && world.CountFood() == 0) {
+        harvestStep = stepIndex;
+    }
     if (bCheckInvariants && invariantFailure == nullptr) {
         invariantFailure = CheckInvariants();
     }
+}
+
+void Samples::ColonySim::SetExplorerShare(float share) {
+    settings.explorerShare = share;
+    const uint32_t antEnd = ants.GetSlotEnd();
+    for (uint32_t slot = 0; slot < antEnd; ++slot) {
+        if (ants.alive[slot] != 0) {
+            ants.role[slot] = DrawRole();
+        }
+    }
+}
+
+void Samples::ColonySim::SetWalls(float x0, float y0, float x1, float y1, bool bWall) {
+    const uint64_t foodBefore = world.CountFood();
+    world.SetWalls(x0, y0, x1, y1, bWall);
+    startFood -= foodBefore - world.CountFood();
+    if (!bWall) {
+        return;
+    }
+
+    // Ants caught inside the new wall move out, or leave if no open cell is near; carried food stays accounted for.
+    const uint32_t antEnd = ants.GetSlotEnd();
+    for (uint32_t slot = 0; slot < antEnd; ++slot) {
+        if (ants.alive[slot] == 0 || !world.IsWall(ants.x[slot], ants.y[slot]) || Relocate(slot)) {
+            continue;
+        }
+        world.GetNest(ants.colony[slot]).stock += ants.carrying[slot];
+        ants.Free(slot);
+    }
+}
+
+void Samples::ColonySim::AddFood(float x, float y, float radius, uint16_t amount) {
+    const uint64_t foodBefore = world.CountFood();
+    world.AddFood(x, y, radius, amount);
+    startFood += world.CountFood() - foodBefore;
+}
+
+Samples::AntRole Samples::ColonySim::DrawRole() {
+    const float roll = static_cast<float>(random.NextDouble());
+    return roll < settings.explorerShare ? AntRole::Explorer : AntRole::Follower;
+}
+
+bool Samples::ColonySim::Relocate(uint32_t slot) {
+    // Rings of cells around the ant's, nearest first.
+    const uint32_t home = ColonyWorld::CellAt(ants.x[slot], ants.y[slot]);
+    const int32_t column = static_cast<int32_t>(home % ColonyWorld::GRID_WIDTH);
+    const int32_t row = static_cast<int32_t>(home / ColonyWorld::GRID_WIDTH);
+    for (int32_t ring = 1; ring <= RELOCATE_CELLS; ++ring) {
+        for (int32_t dy = -ring; dy <= ring; ++dy) {
+            for (int32_t dx = -ring; dx <= ring; ++dx) {
+                if (dx != -ring && dx != ring && dy != -ring && dy != ring) {
+                    continue;
+                }
+                const float x = (static_cast<float>(column + dx) + 0.5f) * ColonyWorld::CELL_SIZE;
+                const float y = (static_cast<float>(row + dy) + 0.5f) * ColonyWorld::CELL_SIZE;
+                if (world.IsWall(x, y)) {
+                    continue;
+                }
+                ants.x[slot] = x;
+                ants.y[slot] = y;
+                ants.prevX[slot] = x;
+                ants.prevY[slot] = y;
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 const char* Samples::ColonySim::CheckInvariants() {

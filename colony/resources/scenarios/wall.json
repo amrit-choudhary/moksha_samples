@@ -1,0 +1,14 @@
+{
+    "name": "wall",
+    "seed": 3,
+    "ants": 2000,
+    "steps": 216000,
+    "nest": { "x": 200, "y": 360, "radius": 20 },
+    "walls": [],
+    "food": [
+        { "x": 1080, "y": 360, "radius": 50, "amount": 60 }
+    ],
+    "events": [
+        { "step": 43200, "event": "addWall", "rect": [620, 120, 660, 720] }
+    ]
+}

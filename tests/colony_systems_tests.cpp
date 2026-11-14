@@ -285,3 +285,109 @@ TEST(ColonySim, RunsHoldTheInvariantsAsThePopulationChanges) {
     EXPECT(sim.GetInvariantFailure() == nullptr);
     EXPECT(sim.CheckInvariants() == nullptr);
 }
+
+TEST(ColonySystems, AntsThatDontMoveGetStuck) {
+    ColonyWorld world;
+    ColonyAnts ants;
+    ASSERT(world.Init());
+    ASSERT(ants.Init());
+    world.AddColony(100.0f, 100.0f, 10.0f);
+    const uint32_t slot = ants.Spawn(0, 640.0f, 360.0f, 0.0f, AntRole::Follower);
+    ColonySettings settings;
+    ME::Random random(2);
+    // Sense alone never moves the ant, so the progress check at 4 s finds it where it started.
+    for (int step = 0; step < 230; ++step) {
+        Systems::UpdateSensing(world, ants, settings, random, DT, 0, ants.GetSlotEnd());
+    }
+    EXPECT(ants.stuckTime[slot] == 0.0f);
+    for (int step = 0; step < 20; ++step) {
+        Systems::UpdateSensing(world, ants, settings, random, DT, 0, ants.GetSlotEnd());
+    }
+    EXPECT(ants.stuckTime[slot] > 0.0f);
+}
+
+TEST(ColonySystems, StuckAntsWipeMarkers) {
+    ColonyWorld world;
+    ColonyAnts ants;
+    ASSERT(world.Init());
+    ASSERT(ants.Init());
+    world.AddColony(100.0f, 100.0f, 10.0f);
+    const uint32_t slot = ants.Spawn(0, 402.0f, 402.0f, 0.0f, AntRole::Follower);
+    ants.stuckTime[slot] = 1.0f;
+    const uint32_t cell = ColonyWorld::CellAt(402.0f, 402.0f);
+    world.GetToHome(0)[cell] = 0.5f;
+    world.GetToFood(0)[cell] = 0.5f;
+    Systems::UpdateMarkers(world, ants, 0, 0, ants.GetSlotEnd());  // a marking step for slot 0, but it is stuck
+    EXPECT_NEAR(world.GetToHome(0)[cell], 0.5f * Samples::ColonyTuning::STUCK_WIPE, 1e-6f);
+    EXPECT_NEAR(world.GetToFood(0)[cell], 0.5f * Samples::ColonyTuning::STUCK_WIPE, 1e-6f);
+}
+
+// Initializes a sim with invariant checks on and an empty map with a nest at (300, 360). False if Init failed.
+static bool InitSim(ColonySim& sim) {
+    if (!sim.Init()) {
+        return false;
+    }
+    sim.SetCheckInvariants(true);
+    sim.GetWorld().Clear();
+    sim.GetWorld().AddColony(300.0f, 360.0f, 20.0f);
+    return true;
+}
+
+TEST(ColonySim, ExplorerShareSetsRoles) {
+    ColonySim sim;
+    ASSERT(InitSim(sim));
+    sim.GetSettings().explorerShare = 0.3f;
+    sim.Start(2'000, 5);
+    const ColonyAnts& ants = sim.GetAnts();
+    uint32_t explorers = 0;
+    for (uint32_t slot = 0; slot < ants.GetSlotEnd(); ++slot) {
+        explorers += ants.role[slot] == AntRole::Explorer ? 1 : 0;
+    }
+    EXPECT(explorers > 480 && explorers < 720);  // 600 expected
+
+    sim.SetExplorerShare(0.0f);
+    explorers = 0;
+    for (uint32_t slot = 0; slot < ants.GetSlotEnd(); ++slot) {
+        explorers += ants.role[slot] == AntRole::Explorer ? 1 : 0;
+    }
+    EXPECT(explorers == 0);
+}
+
+TEST(ColonySim, WallsAndFoodDuringARunKeepTheInvariants) {
+    ColonySim sim;
+    ASSERT(InitSim(sim));
+    sim.GetWorld().AddFood(700.0f, 360.0f, 30.0f, 10);
+    sim.Start(500, 6);
+    for (int step = 0; step < 120; ++step) {
+        sim.Step();
+    }
+
+    // A wall over the nest, where the ants are, and one over the food: ants move out, the food leaves the total.
+    const uint64_t totalBefore = sim.GetStartFood();
+    sim.SetWalls(260.0f, 320.0f, 340.0f, 400.0f, true);
+    sim.SetWalls(660.0f, 320.0f, 740.0f, 400.0f, true);
+    EXPECT(sim.GetStartFood() < totalBefore);
+    EXPECT(sim.CheckInvariants() == nullptr);
+
+    // Opening them again and adding food keeps the books straight too.
+    sim.SetWalls(260.0f, 320.0f, 340.0f, 400.0f, false);
+    sim.AddFood(500.0f, 500.0f, 20.0f, 5);
+    for (int step = 0; step < 300; ++step) {
+        sim.Step();
+    }
+    EXPECT(sim.GetInvariantFailure() == nullptr);
+    EXPECT(sim.CheckInvariants() == nullptr);
+}
+
+TEST(ColonySim, HarvestStepIsRecorded) {
+    ColonySim sim;
+    ASSERT(InitSim(sim));
+    sim.GetWorld().AddFood(342.0f, 362.0f, 2.0f, 1);  // one unit on one cell, 40 units from the nest
+    sim.Start(200, 7);
+    EXPECT(sim.GetHarvestStep() == ColonySim::NO_STEP);
+    for (int step = 0; step < 1'800 && sim.GetHarvestStep() == ColonySim::NO_STEP; ++step) {
+        sim.Step();
+    }
+    EXPECT(sim.GetHarvestStep() != ColonySim::NO_STEP);
+    EXPECT(sim.GetHarvestStep() % ColonySim::HARVEST_CHECK_STEPS == 0);
+}

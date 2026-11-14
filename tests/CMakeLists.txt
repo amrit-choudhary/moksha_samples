@@ -11,6 +11,7 @@ add_executable(Samples_Tests ${SOURCES} "${PROJECT_SOURCE_DIR}/prism_drop/game/p
     "${PROJECT_SOURCE_DIR}/colony/game/colony_ants.cpp"
     "${PROJECT_SOURCE_DIR}/colony/game/colony_step.cpp"
     "${PROJECT_SOURCE_DIR}/colony/game/colony_systems.cpp"
+    "${PROJECT_SOURCE_DIR}/colony/game/colony_timing.cpp"
     "${PROJECT_SOURCE_DIR}/colony/game/colony_world.cpp")
 
 target_include_directories(Samples_Tests PRIVATE "${PROJECT_SOURCE_DIR}")

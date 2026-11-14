@@ -26,6 +26,8 @@ static constexpr ME::Color TO_HOME{0.25f, 0.45f, 1.0f, 1.0f};  // added to the g
 static constexpr ME::Color TO_FOOD{1.0f, 0.30f, 0.25f, 1.0f};
 static constexpr ME::Color ANT_SEARCHING{0.88f, 0.86f, 0.80f, 1.0f};
 static constexpr ME::Color ANT_CARRYING{0.55f, 1.0f, 0.45f, 1.0f};
+static constexpr ME::Color ANT_EXPLORING{0.50f, 0.72f, 1.0f, 1.0f};  // an explorer, searching
+static constexpr ME::Color ANT_STUCK{1.0f, 0.42f, 0.30f, 1.0f};      // wandering and wiping markers
 static constexpr float MARKER_TINT = 0.7f;
 static constexpr float FOOD_FULL = 20.0f;  // a cell with this much food or more is drawn at full colour
 static constexpr float FOOD_MIN_TINT = 0.35f;
@@ -109,6 +111,7 @@ const char* Samples::SceneColony::GetDisplayName() const {
 }
 
 void Samples::SceneColony::SyncCells(const ColonyWorld& world) {
+    instancedSpriteDrawCount0 = ColonyWorld::CELL_COUNT;
     const uint8_t* walls = world.GetWalls();
     const uint16_t* food = world.GetFood();
     const float* toHome = world.GetToHome(0);
@@ -167,7 +170,13 @@ void Samples::SceneColony::SyncAnts(const ColonyAnts& ants) {
         transform.SetScale(ANT_LENGTH, ANT_WIDTH);
 
         ME::SpriteRenderer& renderer = instancedSpriteRenderers1[slot];
-        renderer.color = ants.task[slot] == AntTask::ToHome ? ANT_CARRYING : ANT_SEARCHING;
+        if (ants.stuckTime[slot] > 0.0f) {
+            renderer.color = ANT_STUCK;
+        } else if (ants.task[slot] == AntTask::ToHome) {
+            renderer.color = ANT_CARRYING;
+        } else {
+            renderer.color = ants.role[slot] == AntRole::Explorer ? ANT_EXPLORING : ANT_SEARCHING;
+        }
         renderer.bDirty = true;
     }
     instancedSpriteDrawCount1 = slotEnd;
@@ -205,4 +214,9 @@ void Samples::SceneColony::PlaceView(float x, float y, float half) {
     spriteCamera->position.y = y;
     spriteCamera->viewPosition.x = x;
     spriteCamera->viewPosition.y = y;
+}
+
+void Samples::SceneColony::HideAll() {
+    instancedSpriteDrawCount0 = 0;
+    instancedSpriteDrawCount1 = 0;
 }

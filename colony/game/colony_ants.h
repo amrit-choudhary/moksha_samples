@@ -59,8 +59,12 @@ class ColonyAnts {
     float* y = nullptr;
     float* prevX = nullptr;
     float* prevY = nullptr;
-    float* heading = nullptr;   // radians
-    float* walkTime = nullptr;  // seconds since leaving home or food; sets marker strength
+    float* heading = nullptr;    // radians
+    float* walkTime = nullptr;   // seconds since leaving home or food; sets marker strength
+    float* progressX = nullptr;  // where the ant was at the last progress check
+    float* progressY = nullptr;
+    float* progressTime = nullptr;  // seconds since the last progress check
+    float* stuckTime = nullptr;     // seconds left wandering and wiping markers; 0 when not stuck
     uint16_t* carrying = nullptr;
     uint8_t* colony = nullptr;
     AntRole* role = nullptr;

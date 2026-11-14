@@ -1,7 +1,8 @@
 /**
  * Colony scene. The world fills the view with a fixed camera. Instanced set 0 holds one white quad per world cell
  * (57,600), placed once and coloured every frame from the cell: ground tinted by the colony's markers, walls, food and
- * the nest. Instanced set 1 holds one stretched quad per ant slot, turned to its heading and coloured by its task;
+ * the nest. Instanced set 1 holds one stretched quad per ant slot, turned to its heading and coloured by its state
+ * (searching follower or explorer, carrying, stuck);
  * its draw count is the ants' slot end, and free slots below it have zero scale.
  */
 
@@ -28,6 +29,9 @@ class SceneColony : public ME::Scene {
 
     // Places and colours every ant slot in use (AntSprites).
     void SyncAnts(const ColonyAnts& ants);
+
+    // Draws nothing until the next Sync: for the Drawing load setting, which leaves the engine no sprites to upload.
+    void HideAll();
 
     // Zooms the view by notches (positive in) about the pointer, given as a fraction of the window (0 to 1, bottom-left
     // origin); the world point under it stays put. Between MAX_ZOOM and the whole world, never showing past its edges.

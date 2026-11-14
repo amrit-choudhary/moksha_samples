@@ -1,0 +1,16 @@
+{
+    "name": "shortcut",
+    "seed": 4,
+    "ants": 2000,
+    "steps": 108000,
+    "nest": { "x": 200, "y": 360, "radius": 20 },
+    "walls": [
+        [620, 0, 660, 600]
+    ],
+    "food": [
+        { "x": 1080, "y": 360, "radius": 50, "amount": 60 }
+    ],
+    "events": [
+        { "step": 36000, "event": "removeWall", "rect": [620, 300, 660, 420] }
+    ]
+}

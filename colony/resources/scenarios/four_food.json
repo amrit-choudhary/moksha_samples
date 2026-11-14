@@ -1,0 +1,14 @@
+{
+    "name": "four_food",
+    "seed": 2,
+    "ants": 2000,
+    "steps": 36000,
+    "nest": { "x": 640, "y": 360, "radius": 20 },
+    "walls": [],
+    "food": [
+        { "x": 220, "y": 170, "radius": 30, "amount": 10 },
+        { "x": 1060, "y": 170, "radius": 30, "amount": 10 },
+        { "x": 220, "y": 550, "radius": 30, "amount": 10 },
+        { "x": 1060, "y": 550, "radius": 30, "amount": 10 }
+    ]
+}
