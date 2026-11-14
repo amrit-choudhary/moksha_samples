@@ -1,6 +1,7 @@
 # Colony: design
 
-Not implemented. A landscape (1280×720) ant colony sample whose job is to be the **test bed for the engine's
+v1 implemented (2026-11-14); its done-checks and the 70k/100k measurements are open: see [Progress](#16-progress).
+A landscape (1280×720) ant colony sample whose job is to be the **test bed for the engine's
 multithreading** (roadmap item 16 and the job system after it). It is built and measured now, on one thread, and run
 again unchanged once threads exist, so the before and after can be compared system by system.
 
@@ -371,6 +372,58 @@ To check later, not facts:
 - Profiling scopes (item 17): the sample times itself until then.
 - Pointer over UI (item 18): clicks on the panels must not place things in Play mode.
 - Line batch for the graph (item 19).
+
+## 16. Progress
+
+Last updated 2026-11-14. Everything below is committed (samples `3d63ee3`, engine pin `d3ca148`).
+
+**Built (v1, in eight steps):** empty sample → world grid, Open scenario, cells drawn → ants with Sense, Move, Claims,
+Mark, Fade, Apply → collisions → Colony with the pending list, population target, Debug invariants → stuck wiping,
+explorers, scenarios 2-4 with timed events, harvest step → per-system timing, stats and load panels, controls → the
+headless benchmark. Tests in `tests/colony_world_tests.cpp`, `colony_systems_tests.cpp`, `colony_timing_tests.cpp`.
+Keys, files and the baseline are in the samples' `CLAUDE.md` (Colony section).
+
+**Decisions made while building** (beyond the sections above):
+- Population (section 4, "v1 population"): the Ants setting is a target; a scenario starts with all its ants at once,
+  free; Colony spawns up to 200 per step (4 food each when the stock has it, else free and counted) and removes the
+  highest slots when above. Freeing the top slots shrinks the slot end, so every system's range shrinks too.
+- The nest is drawn by colouring its cells in set 0, so set 1 holds only ants (all 100k slots); no overlay sprites.
+- Stuck detection runs in Sense, which has the random generator (section 5's table updated); a stuck ant wanders 2 s
+  without sensing and Mark wipes (× 0.9 per step) instead of marking.
+- Apply is two functions: `ApplyPending` (serial: deaths, then spawns) and `UpdatePrevPositions` (the copy), timed
+  apart so the serial line is exact. Ants caught by a new wall move to the nearest open cell; food under it leaves the
+  conserved total (`ColonySim::SetWalls` / `AddFood`).
+- Scenario JSON: `name`, `seed`, `ants`, `steps` (it restarts at its last step), `nest {x, y, radius}`, `walls` as
+  `[x0, y0, x1, y1]` rects, `food [{x, y, radius, amount}]` (amount per cell), `events [{step, event, rect | x, y,
+  radius, amount}]`. Wall at step 43,200 and Shortcut at 36,000 have guessed food amounts.
+- Timing: game time is all of `Update`'s own work; frame time is measured between `Update` calls (the engine clamps
+  `deltaTime` to 0.25 s); engine = frame - game. The warm-up (2 s real time) restarts on any change of scenario,
+  setting or pause. The core count is left out of the log (no engine API; `std::thread` is off limits).
+- Engine change made for the sample: mouse wheel input (`InputManager::GetMouseWheelDelta`, all platforms), used for
+  zoom about the pointer; WASD pans. The macOS, iPad, web and Android wheel factors are untested.
+
+**Open, in the order to do them:**
+1. **70k and 100k aren't measured.** Every run starts its ants in a radius-10 disk at the nest, where each ant's 3×3
+   neighbour cells hold the whole colony, so Move is quadratic for the first simulated seconds (single steps of 1 s
+   at 40k, 6.6 s at 100k). The 2 s real-time warm-up ends inside that crowd from 70k up, so those medians (56 and 101
+   ms) include it, and the max step is inflated from 40k up. Options: (A, recommended) spawn the starting population
+   over a disk sized to the count (about 4×4 units per ant) and also require a minimum of simulated warm-up steps
+   (about 300); (B) keep the nest start and warm up until the crowd spreads, which costs minutes per large run. The
+   user hasn't chosen yet. The crowded start may be worth keeping as its own uneven-cost scenario later.
+2. **v1 done-checks** (section 13): lanes form on Open at 2k ants (the user saw the sim work, lanes not confirmed);
+   Wall finishes its harvest (the log prints `harvested at step N`); invariants hold over the headless list (a Debug
+   run of `Sample_Colony_Headless`; slow at 70k+). `Samples_Tests` with the Colony tests hasn't been confirmed run.
+3. **Windowed engine-side numbers:** a Release run of `Sample_Colony` with `[window] vsync=0`, an `L` log at 12k and
+   40k, recorded next to the headless baseline.
+4. `food_per_min` means little in the benchmark's short runs (food is up to 17 s away); harvest and rerouting are
+   checked in the windowed game.
+
+**Then:** v2 (section 13): up to 4 colonies, fights and soldiers, `toEnemy` markers, background requests (wall
+distance field, path field, AI think on snapshots), the Maze scenario.
+
+**Working rules for this sample** (from the user): small steps that each build, explained, then stop for review; no
+threading code; no engine changes unless asked (the wheel was asked for); don't build, run, stage or commit unless the
+user asks (they build, run and commit); clang-format touched files.
 
 ## Sources
 - Pezzza's Work (YouTube): "Ant Simulator, a fresh new version" (multithreading with parallel-for, 2.6× at 12,000 ants;
