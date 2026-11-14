@@ -13,7 +13,7 @@ if(MSVC)
 endif()
 
 # The engine commit every sample builds against. Bump it after pushing the engine changes the samples need.
-set(MOKSHA_PIN e18bb9d0901e0df00ef89aaf40f81213ed2a575b)
+set(MOKSHA_PIN d3ca1481f6c88dfedb14448b519d63c83c34690c)
 
 include(FetchContent)
 FetchContent_Declare(moksha
@@ -37,6 +37,7 @@ add_subdirectory(graphics_stress)
 add_subdirectory(prism_drop)
 add_subdirectory(particle_life)
 add_subdirectory(wind_tunnel)
+add_subdirectory(colony)
 
 if(SAMPLES_BUILD_TESTS)
     add_subdirectory(tests)

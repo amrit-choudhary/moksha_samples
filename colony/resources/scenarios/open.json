@@ -1,0 +1,11 @@
+{
+    "name": "open",
+    "seed": 1,
+    "ants": 2000,
+    "steps": 0,
+    "nest": { "x": 240, "y": 360, "radius": 20 },
+    "walls": [],
+    "food": [
+        { "x": 1040, "y": 360, "radius": 40, "amount": 10 }
+    ]
+}

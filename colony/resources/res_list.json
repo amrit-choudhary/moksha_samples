@@ -1,0 +1,10 @@
+{
+    "copy": [
+        "config/settings.ini",
+        "texture_data/atlas_cell.json",
+        "scenarios/open.json"
+    ],
+    "textures": [
+        "textures/colony_cell.png"
+    ]
+}
