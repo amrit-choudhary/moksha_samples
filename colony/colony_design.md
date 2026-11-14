@@ -410,7 +410,7 @@ soldier) with energy, attack cooldown and fight time; the Fight system and death
 wall avoidance; `colony_requests.*` (wall distance field, path fields, AI think); scenarios Maze, Duel (2 colonies) and
 Rivals (4); the Colonies load row; colony colours, soldiers, rally crosses and attack flashes in the drawing; per-colony
 and request rows in the stats and the log. Tests in `tests/colony_v2_tests.cpp`. Built and run by the user (2026-11-15, RelWithDebInfo,
-profiled at 40k with several colonies); `Samples_Tests` with the v2 tests not yet confirmed.
+profiled at 40k with several colonies); `Samples_Tests` passes (2026-11-15).
 
 **Decisions made for v2** (beyond the sections above):
 - Population: the Ants setting is the total of all colonies, split evenly (`ColonySettings::TargetOf`, the remainder to
@@ -464,8 +464,8 @@ simulated warm-up steps.
 headless list in Debug.
 
 **Open, in the order to do them:**
-1. **Build the profiling fixes and run `Samples_Tests`** (the new `colony_v2_tests.cpp`, the changed Sense, Fade and
-   Fight tests); profile the same 40k run again with `live-profile` to compare.
+1. **Profile the same 40k run again** with `live-profile`, to compare with the profile above (`Samples_Tests`
+   passes with the v2 tests and the profiling fixes, 2026-11-15).
 2. **v2 done-checks** (section 13): watch Duel and Rivals (fights, losses replaced, rally crosses moving, soldiers
    gathering), Maze (both food sources, the gap at step 36,000), the Colonies row on Open; a Debug headless run for
    the invariants. Tune the AI and fight numbers by eye if the colonies never meet or wipe each other out at once.
@@ -481,7 +481,7 @@ scattered across slots). `CellAt`, `IsWall`, `IsRayClear` and `Random::Next` sta
 `.cpp` files and there is no link-time optimization.
 
 **Fixes made from it** (2026-11-15, so the threading baseline measures real work, not call overhead and empty
-searches; not yet built or measured): Fight's search runs every `FIGHT_SEARCH_STEPS` (4) steps, staggered by slot (an
+searches; built, tested and profiled on 2026-11-15): Fight's search runs every `FIGHT_SEARCH_STEPS` (4) steps, staggered by slot (an
 ant reacts within 1/15 s); Sense skips `IsRayClear` when the ant's cell is at least 17 steps from every wall (a ray
 of up to 40 units can't reach one; until the wall distance field arrives, every ray is walked); `ColonyWorld::CellAt`,
 `ColumnOf`, `RowOf`, `IsWall` and `ColonyAntGrid::CellAt` are inline in the header (a multiply and a truncation instead
@@ -491,6 +491,13 @@ bits). Behaviour is the same in kind; the random sequence differs, so runs don't
 likely to matter more once threads share memory bandwidth: copies of neighbour data in grid order made by AntGrid, so
 Move and Fight read neighbours from consecutive memory (section 7's cure). `ME::Random::Next` is still a call into the
 engine library (an engine change, or link-time optimization, would inline it).
+
+**Profile after the fixes** (2026-11-15, same build type and 40k multi-colony run): Move 47% (own code 44%), Sense 33%
+(own code 21%), `FindEnemy` 11% (about half from Fight, half from soldier sensing), engine draw and update 10%,
+`Random::Next` 2.2%, `IsRayClear` 0.6%, `CellAt` 0.4%. Move and the engine weren't changed, and both grew by the same
+factor (×1.80 and ×1.77), so the frame is about 1.8× faster: Sense about 2.9× and Fight about 3.7× faster in their own
+right. The frame is now led by memory-bound neighbour reads (Move plus `FindEnemy`, about 55%), which is what will
+limit threading; the grid-order copies stay on hold so threading is first measured with that limit in place.
 
 **Then:** v3 (section 13): Play mode, map generation behind a loading screen, title screen.
 

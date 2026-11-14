@@ -191,7 +191,8 @@ radius-10 disk at the nest, so Move is quadratic for the first simulated seconds
 inside that crowd. Compare threading on the 2k-40k runs. `food_per_min` means little in runs this short.
 v1 checked by the user (2026-11-14): tests, lanes, Wall harvest, invariants over the headless list. v2 (2026-11-14) builds and
 runs (profiled 2026-11-15 in RelWithDebInfo at 40k with several colonies: Sense 54%, Move 26%, Fight 12%, engine 6%).
-The profiling fixes of 2026-11-15 aren't built yet; v2's tests and done-checks are open (design section 16).
+The profiling fixes of 2026-11-15 pass `Samples_Tests` and make the frame about 1.8× faster (Move 47%, Sense
+33%, `FindEnemy` 11%, engine 10% after them); v2's done-checks are open (design section 16).
 
 ## Web
 Every offline sample plays in a browser. Verified 2026-11-04 in Safari on macOS (M3), Emscripten 6.0.13: Tower Climb, Survivors,
