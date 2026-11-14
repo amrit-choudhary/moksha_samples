@@ -85,10 +85,13 @@ TEST(ColonySystems, SensingTurnsTowardTheStrongestMarker) {
         toFood[cell] = cell / ColonyWorld::GRID_WIDTH < ColonyWorld::GRID_HEIGHT / 2 ? 0.8f : 0.2f;
     }
     const uint32_t slot = ants.Spawn(0, 640.0f, 361.0f, 0.0f, AntRole::Follower);
+    ColonyAntGrid grid;
+    ASSERT(grid.Init(ColonyAnts::MAX_ANTS));
+    Systems::UpdateAntGrid(ants, grid, 0, ants.GetSlotEnd());
     ColonySettings settings;
     ME::Random random(11);
     for (int step = 0; step < 30; ++step) {
-        Systems::UpdateSensing(world, ants, settings, random, DT, 0, ants.GetSlotEnd());
+        Systems::UpdateSensing(world, ants, grid, settings, random, DT, 0, ants.GetSlotEnd());
     }
     EXPECT(std::sin(ants.heading[slot]) < -0.3f);
 }
@@ -124,6 +127,7 @@ TEST(ColonySystems, CollisionsPushOverlappingAntsApart) {
 TEST(ColonySystems, FadeScalesAndSnapsToZero) {
     ColonyWorld world;
     ASSERT(world.Init());
+    world.AddColony(100.0f, 100.0f, 10.0f);  // Fade covers the colonies that exist
     world.GetToHome(0)[10] = 0.5f;
     world.GetToFood(0)[20] = 0.0015f;
     Systems::UpdateFade(world, 0.5f, 0, ColonyWorld::CELL_COUNT);
@@ -293,15 +297,18 @@ TEST(ColonySystems, AntsThatDontMoveGetStuck) {
     ASSERT(ants.Init());
     world.AddColony(100.0f, 100.0f, 10.0f);
     const uint32_t slot = ants.Spawn(0, 640.0f, 360.0f, 0.0f, AntRole::Follower);
+    ColonyAntGrid grid;
+    ASSERT(grid.Init(ColonyAnts::MAX_ANTS));
+    Systems::UpdateAntGrid(ants, grid, 0, ants.GetSlotEnd());
     ColonySettings settings;
     ME::Random random(2);
     // Sense alone never moves the ant, so the progress check at 4 s finds it where it started.
     for (int step = 0; step < 230; ++step) {
-        Systems::UpdateSensing(world, ants, settings, random, DT, 0, ants.GetSlotEnd());
+        Systems::UpdateSensing(world, ants, grid, settings, random, DT, 0, ants.GetSlotEnd());
     }
     EXPECT(ants.stuckTime[slot] == 0.0f);
     for (int step = 0; step < 20; ++step) {
-        Systems::UpdateSensing(world, ants, settings, random, DT, 0, ants.GetSlotEnd());
+        Systems::UpdateSensing(world, ants, grid, settings, random, DT, 0, ants.GetSlotEnd());
     }
     EXPECT(ants.stuckTime[slot] > 0.0f);
 }

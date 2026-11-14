@@ -1,0 +1,21 @@
+{
+    "name": "rivals",
+    "seed": 7,
+    "ants": 4000,
+    "soldiers": 0.1,
+    "steps": 108000,
+    "nests": [
+        { "x": 160, "y": 140, "radius": 20 },
+        { "x": 1120, "y": 580, "radius": 20 },
+        { "x": 1120, "y": 140, "radius": 20 },
+        { "x": 160, "y": 580, "radius": 20 }
+    ],
+    "walls": [],
+    "food": [
+        { "x": 640, "y": 360, "radius": 60, "amount": 40 },
+        { "x": 640, "y": 120, "radius": 30, "amount": 20 },
+        { "x": 640, "y": 600, "radius": 30, "amount": 20 },
+        { "x": 300, "y": 360, "radius": 30, "amount": 20 },
+        { "x": 980, "y": 360, "radius": 30, "amount": 20 }
+    ]
+}

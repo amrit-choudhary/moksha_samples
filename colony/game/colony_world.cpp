@@ -9,6 +9,9 @@ Samples::ColonyWorld::~ColonyWorld() {
     delete[] food;
     delete[] toHome;
     delete[] toFood;
+    delete[] toEnemy;
+    delete[] wallDistance;
+    delete[] pathField;
 }
 
 bool Samples::ColonyWorld::Init() {
@@ -19,6 +22,9 @@ bool Samples::ColonyWorld::Init() {
     food = new uint16_t[CELL_COUNT];
     toHome = new float[MAX_COLONIES * CELL_COUNT];
     toFood = new float[MAX_COLONIES * CELL_COUNT];
+    toEnemy = new float[MAX_COLONIES * CELL_COUNT];
+    wallDistance = new uint8_t[CELL_COUNT];
+    pathField = new uint16_t[MAX_COLONIES * CELL_COUNT];
     Clear();
     return true;
 }
@@ -27,6 +33,15 @@ void Samples::ColonyWorld::Clear() {
     std::memset(food, 0, CELL_COUNT * sizeof(food[0]));
     std::memset(toHome, 0, MAX_COLONIES * CELL_COUNT * sizeof(toHome[0]));
     std::memset(toFood, 0, MAX_COLONIES * CELL_COUNT * sizeof(toFood[0]));
+    std::memset(toEnemy, 0, MAX_COLONIES * CELL_COUNT * sizeof(toEnemy[0]));
+    std::memset(wallDistance, 0, CELL_COUNT * sizeof(wallDistance[0]));
+    bWallDistance = false;
+    for (uint32_t i = 0; i < MAX_COLONIES * CELL_COUNT; ++i) {
+        pathField[i] = NO_PATH;
+    }
+    for (bool& bColonyPath : bPath) {
+        bColonyPath = false;
+    }
     for (uint32_t row = 0; row < GRID_HEIGHT; ++row) {
         for (uint32_t column = 0; column < GRID_WIDTH; ++column) {
             const bool bBorder = row == 0 || column == 0 || row == GRID_HEIGHT - 1 || column == GRID_WIDTH - 1;
@@ -60,6 +75,7 @@ void Samples::ColonyWorld::SetWalls(float x0, float y0, float x1, float y1, bool
                 for (uint32_t colony = 0; colony < MAX_COLONIES; ++colony) {
                     toHome[colony * CELL_COUNT + cell] = 0.0f;
                     toFood[colony * CELL_COUNT + cell] = 0.0f;
+                    toEnemy[colony * CELL_COUNT + cell] = 0.0f;
                 }
             }
         }
@@ -89,23 +105,25 @@ bool Samples::ColonyWorld::AddColony(float x, float y, float radius) {
     if (colonyCount >= MAX_COLONIES) {
         return false;
     }
+    nests[colonyCount] = ColonyNest();
     nests[colonyCount].x = x;
     nests[colonyCount].y = y;
     nests[colonyCount].radius = radius;
-    nests[colonyCount].stock = 0;
     ++colonyCount;
     return true;
 }
 
-uint32_t Samples::ColonyWorld::CellAt(float x, float y) {
-    return static_cast<uint32_t>(RowOf(y)) * GRID_WIDTH + static_cast<uint32_t>(ColumnOf(x));
+void Samples::ColonyWorld::SetWallDistance(const uint8_t* distance) {
+    std::memcpy(wallDistance, distance, CELL_COUNT * sizeof(wallDistance[0]));
+    bWallDistance = true;
 }
 
-bool Samples::ColonyWorld::IsWall(float x, float y) const {
-    if (!(x >= 0.0f && x < WIDTH && y >= 0.0f && y < HEIGHT)) {
-        return true;
+void Samples::ColonyWorld::SetPathField(uint32_t colony, const uint16_t* field) {
+    if (colony >= MAX_COLONIES) {
+        return;
     }
-    return walls[CellAt(x, y)] != 0;
+    std::memcpy(pathField + colony * CELL_COUNT, field, CELL_COUNT * sizeof(pathField[0]));
+    bPath[colony] = true;
 }
 
 bool Samples::ColonyWorld::IsRayClear(float x0, float y0, float x1, float y1) const {
@@ -159,17 +177,6 @@ uint64_t Samples::ColonyWorld::CountFood() const {
     return total;
 }
 
-int32_t Samples::ColonyWorld::ColumnOf(float x) {
-    const int32_t column = static_cast<int32_t>(std::floor(x / CELL_SIZE));
-    return column < 0 ? 0
-                      : (column >= static_cast<int32_t>(GRID_WIDTH) ? static_cast<int32_t>(GRID_WIDTH) - 1 : column);
-}
-
-int32_t Samples::ColonyWorld::RowOf(float y) {
-    const int32_t row = static_cast<int32_t>(std::floor(y / CELL_SIZE));
-    return row < 0 ? 0 : (row >= static_cast<int32_t>(GRID_HEIGHT) ? static_cast<int32_t>(GRID_HEIGHT) - 1 : row);
-}
-
 Samples::ColonyAntGrid::~ColonyAntGrid() {
     delete[] cellStart;
     delete[] slots;
@@ -188,13 +195,4 @@ bool Samples::ColonyAntGrid::Init(uint32_t maxAnts) {
     std::memset(cellStart, 0, (CELL_COUNT + 1) * sizeof(cellStart[0]));
     slotCount = 0;
     return true;
-}
-
-uint32_t Samples::ColonyAntGrid::CellAt(float x, float y) {
-    int32_t column = static_cast<int32_t>(std::floor(x / CELL_SIZE));
-    int32_t row = static_cast<int32_t>(std::floor(y / CELL_SIZE));
-    column =
-        column < 0 ? 0 : (column >= static_cast<int32_t>(GRID_WIDTH) ? static_cast<int32_t>(GRID_WIDTH) - 1 : column);
-    row = row < 0 ? 0 : (row >= static_cast<int32_t>(GRID_HEIGHT) ? static_cast<int32_t>(GRID_HEIGHT) - 1 : row);
-    return static_cast<uint32_t>(row) * GRID_WIDTH + static_cast<uint32_t>(column);
 }

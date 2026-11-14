@@ -19,9 +19,9 @@ namespace Samples {
 
 class SceneUIColony : public ME::SceneUI {
    public:
-    static constexpr uint32_t STATS_ROWS = 19;
+    static constexpr uint32_t STATS_ROWS = 26;  // 6 heads, 14 timers, a note, requests, 4 colonies
     static constexpr uint32_t STATS_CHARS = 46;
-    static constexpr uint32_t LOAD_ROWS = 8;
+    static constexpr uint32_t LOAD_ROWS = 9;
     static constexpr uint32_t LOAD_CHARS = 40;
 
     SceneUIColony() = default;

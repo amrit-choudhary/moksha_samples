@@ -51,6 +51,13 @@ void ReadFoodSource(const cJSON* object, Samples::ColonyFoodSource& out) {
         static_cast<uint16_t>(amount < Samples::ColonyWorld::MAX_FOOD ? amount : Samples::ColonyWorld::MAX_FOOD);
 }
 
+// A nest object: x, y, radius.
+void ReadNest(const cJSON* object, Samples::ColonyNestSpot& out) {
+    out.x = ReadFloat(object, "x", out.x);
+    out.y = ReadFloat(object, "y", out.y);
+    out.radius = ReadFloat(object, "radius", out.radius);
+}
+
 // An event object: step, event (addWall, removeWall, addFood), and its rect or food fields. False if malformed.
 bool ReadEvent(const cJSON* object, Samples::ColonyEvent& out) {
     const cJSON* type = cJSON_GetObjectItem(object, "event");
@@ -87,10 +94,23 @@ bool Samples::ColonyScenario::Load(const char* path) {
         return false;
     }
 
+    // One "nest" object, or a "nests" array.
+    nestCount = 0;
+    const cJSON* nest = cJSON_GetObjectItem(json, "nest");
+    if (cJSON_IsObject(nest)) {
+        ReadNest(nest, nests[nestCount++]);
+    }
+    const cJSON* nestArray = cJSON_GetObjectItem(json, "nests");
+    const cJSON* nestItem = nullptr;
+    cJSON_ArrayForEach(nestItem, nestArray) {
+        if (nestCount < ColonyWorld::MAX_COLONIES && cJSON_IsObject(nestItem)) {
+            ReadNest(nestItem, nests[nestCount++]);
+        }
+    }
+
     bool bValid = true;
     const cJSON* nameItem = cJSON_GetObjectItem(json, "name");
-    const cJSON* nest = cJSON_GetObjectItem(json, "nest");
-    if (!cJSON_IsString(nameItem) || !cJSON_IsObject(nest)) {
+    if (!cJSON_IsString(nameItem) || nestCount == 0) {
         ME::LogError("Colony: scenario ", path, " needs a name and a nest");
         bValid = false;
     } else {
@@ -98,9 +118,8 @@ bool Samples::ColonyScenario::Load(const char* path) {
         seed = ReadUint(json, "seed", seed);
         ants = ReadUint(json, "ants", ants);
         steps = ReadUint(json, "steps", steps);
-        nestX = ReadFloat(nest, "x", nestX);
-        nestY = ReadFloat(nest, "y", nestY);
-        nestRadius = ReadFloat(nest, "radius", nestRadius);
+        const float share = ReadFloat(json, "soldiers", soldiers);
+        soldiers = share < 0.0f ? 0.0f : (share > 1.0f ? 1.0f : share);
 
         wallCount = 0;
         const cJSON* wallArray = cJSON_GetObjectItem(json, "walls");
@@ -141,16 +160,25 @@ bool Samples::ColonyScenario::Load(const char* path) {
     return bValid;
 }
 
-void Samples::ColonyScenario::Build(ColonyWorld& world) const {
+void Samples::ColonyScenario::Build(ColonyWorld& world, uint32_t colonyCount) const {
     world.Clear();
     for (uint32_t i = 0; i < wallCount; ++i) {
         world.SetWalls(walls[i].x0, walls[i].y0, walls[i].x1, walls[i].y1, true);
+    }
+    if (colonyCount == 0) {
+        colonyCount = nestCount;
+    }
+    colonyCount = colonyCount < ColonyWorld::MAX_COLONIES ? colonyCount : ColonyWorld::MAX_COLONIES;
+    for (uint32_t colony = 0; colony < colonyCount; ++colony) {
+        const ColonyNestSpot& spot = colony < nestCount ? nests[colony] : SPARE_NESTS[colony - 1];
+        world.SetWalls(spot.x - spot.radius, spot.y - spot.radius, spot.x + spot.radius, spot.y + spot.radius, false);
+        world.AddColony(spot.x, spot.y, spot.radius);
+        world.GetNest(colony).soldierShare = soldiers;
     }
     for (uint32_t i = 0; i < foodSourceCount; ++i) {
         const ColonyFoodSource& source = foodSources[i];
         world.AddFood(source.x, source.y, source.radius, source.amount);
     }
-    world.AddColony(nestX, nestY, nestRadius);
 }
 
 void Samples::ColonyScenario::ApplyEvents(uint32_t step, ColonySim& sim) const {

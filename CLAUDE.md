@@ -26,6 +26,10 @@ the engine's test harness: an engine change is checked by running the samples ag
 - An engine API change is made in the engine, and the samples are fixed in the same session. The user
   pushes the engine first, then bumps `MOKSHA_PIN` and pushes the samples.
 - The engine's conventions (above) apply here too.
+- Profiling (Windows): the per-machine `live` preset sets RelWithDebInfo to Release's optimization (`/O2 /Ob2`, link
+  `/OPT:REF /OPT:ICF`) plus debug info (`/Zi`, `/DEBUG`), so profiles match Release and have names (the stock
+  RelWithDebInfo's `/Ob1` inlines less). Build with `cmake --build --preset live-profile --target Sample_<Name>`; the
+  `.pdb` files sit next to the binaries in the `RelWithDebInfo` folders.
 
 ## Android
 Per-machine `android` preset in `CMakeUserPresets.json` (inherits `live`; Ninja, the NDK toolchain from
@@ -156,30 +160,38 @@ at 199×112), about 0.8 of a core; the pressure solve was 14 of 15 ms before red
 
 ## Colony (multithreading test bed)
 `Sample_Colony`: landscape (1280×720) ant colony, built to measure the engine's coming multithreading before and after
-(design and rules: `colony/colony_design.md`; v1 = one colony, Simulation mode). No threading code: every system is a
-range function in `game/colony_systems.*`, called once with the full range from `game/colony_step.*`, the only file
-threading will change. Pure code in `game/colony_{world,ants,systems,step,timing}.*`, tested in `Samples_Tests`;
-`colony_scenario.*` loads `resources/scenarios/*.json` (Open, Four food, Wall, Shortcut; timed events). Steps run in
-`Update`, `steps per frame` of 1/60 s, not in `FixedUpdate`. The Ants setting is the population target (spawns cost 4
-food when the stock has it). Debug checks the invariants every step (food conserved, ant grid, ants out of walls).
-Load panel (Up/Down, -/+): scenario, ants 1k-100k, steps/frame, follower samples, explorers, collisions, drawing. Space
-pause, R restart, N next, Tab stats (per system median/max/share, serial, game and engine ms), L logs them, wheel zoom
-(the engine's `GetMouseWheelDelta`), WASD pan. Measure in Release with `[window] vsync=0`; the `live-release` build
-preset is per machine. `Sample_Colony_Headless` is the game-side benchmark: 21 runs (each scenario at 2k/12k/40k ants,
-then the ant ladder on Open), 4 steps per frame, 600 measured steps (300 from 70k ants) after a 2 s warm-up, logging
+(design and rules: `colony/colony_design.md`; v1 = one colony, v2 = up to 4 AI colonies that fight; Simulation mode).
+No threading code: every system is a range function in `game/colony_systems.*`, called once with the full range from
+`game/colony_step.*`, the only file threading will change. Background requests (wall distance field, per-colony path
+field, AI think on a snapshot) live in `game/colony_requests.*`: inputs copied when asked, work run inline at the end of
+the step, result applied at the start of the next (a job system would only change where the work runs). Pure code in
+`game/colony_{world,ants,systems,step,timing,requests}.*`, tested in `Samples_Tests` (`colony_*_tests.cpp`);
+`colony_scenario.*` loads `resources/scenarios/*.json` (Open, Four food, Wall, Shortcut, Maze, Duel, Rivals; `nest` or
+`nests`, `soldiers`, timed events). Steps run in `Update`, `steps per frame` of 1/60 s, not in `FixedUpdate`. The Ants
+setting is the population target of all colonies together, split evenly (spawns cost 4 food, soldiers 12, when the
+stock has it). With more than one colony every colony is AI and Fight runs; with one, Fight is skipped and there are no
+soldiers. Debug checks the invariants every step (food conserved, ant grid, ants out of walls, per-colony counts).
+Load panel (Up/Down, -/+): scenario, colonies (restarts with 1-4; extra nests in the corners), ants 1k-100k,
+steps/frame, follower samples, explorers, collisions, drawing. Space pause, R restart, N next, Tab stats (per system
+median/max/share, serial, game and engine ms, requests, a row per colony), L logs them, wheel zoom (the engine's
+`GetMouseWheelDelta`), WASD pan. Measure in Release with `[window] vsync=0`; the `live-release` build preset is per
+machine. `Sample_Colony_Headless` is the game-side benchmark: 30 runs (each of the 7 scenarios at 2k/12k/40k ants, then
+the ant ladder on Open), 4 steps per frame, 600 measured steps (300 from 70k ants) after a 2 s warm-up, logging
 `colony_bench` blocks; its frame and engine times include the headless driver's sleep (`--fixedStepFPS=1000` shortens
 it). Frame time is measured between `Update` calls, since the engine clamps `deltaTime` to 0.25 s. The core count is
 left out of the log on purpose.
-Baseline (2026-11-14, Windows, Release, headless, `--fixedStepFPS=1000`, dev machine, 1 thread, 4 steps per frame;
-two runs agree within 2%): ms per step median 0.58 at 1k, 1.16 at 2k, 1.8 at 4k, 3.8 at 8k, 6.1 at 12k, 10.6 at 20k,
-22.5 at 40k (about 0.55 µs per ant). Sense is 65-83% of the frame, Move most of the rest (1.37 ms at 12k, 6.8 at 40k);
-serial (grid; colony and apply round to 0) 0.16 ms at 40k, under 1%; Fade 0.006 ms; headless engine time 0.14-0.9 ms
-per frame. The four scenarios cost the same at a given load. The list took 415 s.
-70k and 100k are not measured yet: every run starts its ants in a radius-10 disk at the nest, where each ant's
-neighbour cells hold the whole colony, so Move is quadratic for the first simulated seconds (single steps of 1 s at
-40k, 6.6 s at 100k), and the 2 s real-time warm-up ends inside that crowd at 70k and up (their medians, 56 and 101 ms,
-include it). The fix is a warm-up that also lasts a number of simulated steps. `food_per_min` means little in runs this
-short. Still to check for v1: lanes at 2k on Open, Wall harvests, invariants over the headless list (a Debug run).
+v1 baseline (2026-11-14, before v2; Windows, Release, headless, `--fixedStepFPS=1000`, dev machine, 1 thread, 4 steps
+per frame; two runs agree within 2%): ms per step median 0.58 at 1k, 1.16 at 2k, 1.8 at 4k, 3.8 at 8k, 6.1 at 12k, 10.6
+at 20k, 22.5 at 40k (about 0.55 µs per ant). Sense is 65-83% of the frame, Move most of the rest (1.37 ms at 12k, 6.8 at
+40k); serial (grid; colony and apply round to 0) 0.16 ms at 40k, under 1%; Fade 0.006 ms; headless engine time 0.14-0.9
+ms per frame. The four scenarios cost the same at a given load. The list took 415 s. v2 and the profiling fixes of
+2026-11-15 (design section 16) changed every run, so the baseline is to be measured again before threading.
+The 70k and 100k medians (56 and 101 ms) are wrong, a known limit left on purpose: every run starts its ants in a
+radius-10 disk at the nest, so Move is quadratic for the first simulated seconds and the 2 s real-time warm-up ends
+inside that crowd. Compare threading on the 2k-40k runs. `food_per_min` means little in runs this short.
+v1 checked by the user (2026-11-14): tests, lanes, Wall harvest, invariants over the headless list. v2 (2026-11-14) builds and
+runs (profiled 2026-11-15 in RelWithDebInfo at 40k with several colonies: Sense 54%, Move 26%, Fight 12%, engine 6%).
+The profiling fixes of 2026-11-15 aren't built yet; v2's tests and done-checks are open (design section 16).
 
 ## Web
 Every offline sample plays in a browser. Verified 2026-11-04 in Safari on macOS (M3), Emscripten 6.0.13: Tower Climb, Survivors,

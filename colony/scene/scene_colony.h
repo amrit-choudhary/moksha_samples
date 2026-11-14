@@ -1,9 +1,10 @@
 /**
  * Colony scene. The world fills the view with a fixed camera. Instanced set 0 holds one white quad per world cell
- * (57,600), placed once and coloured every frame from the cell: ground tinted by the colony's markers, walls, food and
- * the nest. Instanced set 1 holds one stretched quad per ant slot, turned to its heading and coloured by its state
- * (searching follower or explorer, carrying, stuck);
- * its draw count is the ants' slot end, and free slots below it have zero scale.
+ * (57,600), placed once and coloured every frame from the cell: ground tinted by every colony's markers (colony 0's
+ * trails blue and red, the others' in their colour, toEnemy pink), walls, food, the nests and the rally crosses in
+ * their colony's colour. Instanced set 1 holds one stretched quad per ant slot, turned to its heading and coloured by
+ * its state and colony (searching follower or explorer, carrying, stuck, just attacked; soldiers larger, in their
+ * colony's colour); its draw count is the ants' slot end, and free slots below it have zero scale.
  */
 
 #pragma once

@@ -1,9 +1,12 @@
 /**
- * Colony simulation and its schedule. ColonySim owns the world, the ants, the ant grid and the pending list; Step()
- * advances them by STEP_TIME by calling each system once over its full range, in the design's order: AntGrid, Sense,
- * Move, Claims, Mark, Fade, Colony, Apply (Claims before Mark, as Mark reads what Claims changes; Colony only queues
- * spawns and deaths, which Apply makes at the end), timing each with std::chrono::steady_clock. This is the only file
- * threading will change.
+ * Colony simulation and its schedule. ColonySim owns the world, the ants, the ant grid, the pending list and the
+ * background requests; Step() advances them by STEP_TIME by calling each system once over its full range, in the
+ * design's order: AntGrid, Sense, Move, Claims, Fight, Mark, Fade, Colony (deaths, then spawns), Apply (Claims and
+ * Fight before Mark, as Mark reads what they change; Colony only queues spawns and deaths, which Apply makes at the
+ * end), timing each with std::chrono::steady_clock. Requests: finished results are applied at the start of a step;
+ * walls changing, rally points moving and AI think (every ColonyAI::THINK_PERIOD steps per colony, when there is more
+ * than one colony) queue requests, whose work runs inline at the end of the step. This is the only file threading
+ * will change.
  * Pure code, no engine systems: one ME::Random, seeded by Start, serves every system.
  */
 
@@ -12,6 +15,7 @@
 #include <cstdint>
 
 #include "colony/game/colony_ants.h"
+#include "colony/game/colony_requests.h"
 #include "colony/game/colony_systems.h"
 #include "colony/game/colony_timing.h"
 #include "colony/game/colony_world.h"
@@ -32,9 +36,10 @@ class ColonySim {
     // Allocates the world, ants and ant grid. False if called twice.
     bool Init();
 
-    // Seeds the random generator, removes every ant and spawns antCount searching ants in colony 0's nest at no cost
-    // (none if the world has no colony), explorers by the explorer share; antCount becomes the target. Call after
-    // building the map into GetWorld().
+    // Seeds the random generator, removes every ant and spawns antCount searching ants at no cost, each colony its
+    // share (ColonySettings::TargetOf) in its own nest (none if the world has no colony), explorers by the explorer
+    // share; each colony's first ants are soldiers by its nest's soldierShare. antCount becomes the target. Requests
+    // start over, with the wall distance field asked for. Call after building the map into GetWorld().
     void Start(uint32_t antCount, uint32_t seed);
 
     // Sets the explorer share and draws every live ant's role again with it.
@@ -42,7 +47,7 @@ class ColonySim {
 
     // Changes walls during a run (timed events): as ColonyWorld::SetWalls, then moves every ant caught in a new wall
     // to the nearest open cell (or removes it, its food going to its nest, if none is near). Food removed by the wall
-    // leaves the conserved total.
+    // leaves the conserved total. Asks for the wall distance field and every rallying colony's path field again.
     void SetWalls(float x0, float y0, float x1, float y1, bool bWall);
 
     // Adds food during a run (timed events), as ColonyWorld::AddFood; the conserved total grows by what was added.
@@ -57,8 +62,9 @@ class ColonySim {
     }
 
     // Checks the design's invariants: food conserved (cells + carried + stock + spent = the total at Start), food
-    // per cell within MAX_FOOD, markers finite and in [0, 1], live ants inside the world and outside walls, and the
-    // ant grid (rebuilt here) holding every live ant once. Returns null when all hold, else what failed.
+    // per cell within MAX_FOOD, markers finite and in [0, 1], live ants inside the world and outside walls, in an
+    // existing colony, with finite energy, the per-colony ant and soldier counts right, and the ant grid (rebuilt
+    // here) holding every live ant once. Returns null when all hold, else what failed.
     const char* CheckInvariants();
 
     // On by default in Debug builds. The first failure is kept, and checks stop after it.
@@ -88,6 +94,14 @@ class ColonySim {
     }
     ColonySettings& GetSettings() {
         return settings;
+    }
+    const ColonyRequests& GetRequests() const {
+        return requests;
+    }
+
+    // AI colonies think and rally their soldiers when the world has more than one colony.
+    bool IsAIOn() const {
+        return world.GetColonyCount() > 1;
     }
 
     // Steps since Start.
@@ -122,6 +136,7 @@ class ColonySim {
     ColonyAntGrid antGrid;
     ColonyPending pending;
     ColonySettings settings;
+    ColonyRequests requests;
     ME::Random random;
     uint32_t stepIndex = 0;
     float fadeDecay = 1.0f;  // per step

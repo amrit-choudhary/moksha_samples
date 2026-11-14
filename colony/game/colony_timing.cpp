@@ -6,8 +6,8 @@
 namespace {
 
 constexpr const char* TIMER_NAMES[] = {
-    "grid",   "sense",        "move",       "claims",      "mark",         "fade",
-    "colony", "apply_serial", "apply_copy", "ant_sprites", "cell_sprites", "engine",
+    "grid",   "sense",        "move",       "claims",   "fight",       "mark",         "fade",
+    "colony", "apply_serial", "apply_copy", "requests", "ant_sprites", "cell_sprites", "engine",
 };
 static_assert(sizeof(TIMER_NAMES) / sizeof(TIMER_NAMES[0]) == Samples::COLONY_TIMERS);
 static_assert(static_cast<uint32_t>(Samples::ColonyTimer::AntSprites) == Samples::COLONY_STEP_TIMERS);

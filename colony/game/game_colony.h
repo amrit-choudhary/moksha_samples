@@ -2,13 +2,15 @@
  * Colony game: an ant colony in Simulation mode, the test bed for the engine's multithreading (colony_design.md).
  * The simulation runs `steps per frame` steps of 1/60 s in Update, never in FixedUpdate, so the load is what the
  * settings say and a slow frame shows as a lower frame rate. A scenario's timed events fire before their step; at its
- * last step it starts again; the harvest step (all food gone) is logged.
+ * last step it starts again; the harvest step (all food gone) is logged. With more than one colony, every colony is
+ * AI: it thinks every ColonyAI::THINK_PERIOD steps (soldier share, rally point), and colonies fight.
  * Every system is timed (median and max per step, share of the frame, sorted by cost; engine = frame - game) after a
  * 2 s warm-up, which any change of scenario or setting starts again.
- * Keys: Up/Down pick a load row and -/+ change it (or the ^ v - + buttons); Space pauses; R restarts the scenario and
- * N starts the next; Tab shows or hides the stats; L logs them; the scroll wheel zooms about the pointer and WASD
- * pans; Escape quits. Debug builds check the invariants after every step and log the first failure.
- * Headless, it is the benchmark: every v1 scenario at 2k, 12k and 40k ants, then the whole ant ladder on Open, at
+ * Keys: Up/Down pick a load row and -/+ change it (or the ^ v - + buttons); the Colonies row restarts the scenario
+ * with 1-4 colonies (extra nests in the corners); Space pauses; R restarts the scenario and N starts the next; Tab
+ * shows or hides the stats; L logs them; the scroll wheel zooms about the pointer and WASD pans; Escape quits. Debug
+ * builds check the invariants after every step and log the first failure.
+ * Headless, it is the benchmark: every scenario at 2k, 12k and 40k ants, then the whole ant ladder on Open, at
  * BENCH_STEPS_PER_FRAME; each run starts its ants at once, warms up, measures BENCH_STEPS steps (BENCH_STEPS_LARGE
  * from BENCH_LARGE_ANTS up) and logs the design's colony_bench block; then it quits. Per-system times are exact; frame
  * and engine times include the headless driver's sleep to the next fixed step (shorten it with --fixedStepFPS=1000).
@@ -41,6 +43,7 @@ class GameColony : public ME::Game {
     // The load panel's rows, in order.
     enum class LoadRow : uint8_t {
         Scenario,
+        Colonies,
         Ants,
         StepsPerFrame,
         FollowerSamples,
@@ -67,8 +70,8 @@ class GameColony : public ME::Game {
         uint32_t steps = 0;
     };
 
-    // Loads SCENARIOS[index], builds its map and spawns its ants (antCount, or the scenario's when 0). On failure the
-    // world is an empty map.
+    // Loads SCENARIOS[index], builds its map with colonySetting colonies (the scenario's when 0) and spawns its ants
+    // (antCount, or the scenario's when 0). On failure the world is an empty map.
     void StartScenario(uint32_t index, uint32_t antCount = 0);
 
     // Fills the benchmark's run list and starts the first run.
@@ -116,6 +119,7 @@ class GameColony : public ME::Game {
     ColonyTimingSummary summary;
 
     uint32_t scenarioIndex = 0;
+    uint32_t colonySetting = 0;  // colonies to build, 0 for the scenario's own; another scenario resets it
     uint32_t stepsPerFrame = 1;
     bool bDrawing = true;
     bool bPaused = false;

@@ -9,6 +9,7 @@ add_executable(Samples_Tests ${SOURCES} "${PROJECT_SOURCE_DIR}/prism_drop/game/p
     "${PROJECT_SOURCE_DIR}/wind_tunnel/game/wind_tunnel_sim.cpp"
     "${PROJECT_SOURCE_DIR}/wind_tunnel/game/wind_tunnel_shapes.cpp"
     "${PROJECT_SOURCE_DIR}/colony/game/colony_ants.cpp"
+    "${PROJECT_SOURCE_DIR}/colony/game/colony_requests.cpp"
     "${PROJECT_SOURCE_DIR}/colony/game/colony_step.cpp"
     "${PROJECT_SOURCE_DIR}/colony/game/colony_systems.cpp"
     "${PROJECT_SOURCE_DIR}/colony/game/colony_timing.cpp"

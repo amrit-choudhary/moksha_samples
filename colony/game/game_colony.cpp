@@ -13,12 +13,11 @@ namespace {
 
 using Clock = std::chrono::steady_clock;
 
-// The v1 scenarios, in the order N and the Scenario row step through them.
+// The scenarios, in the order N and the Scenario row step through them: v1's four with one colony, then the maze, and
+// two and four rival colonies.
 constexpr const char* SCENARIOS[] = {
-    "scenarios/open.json",
-    "scenarios/four_food.json",
-    "scenarios/wall.json",
-    "scenarios/shortcut.json",
+    "scenarios/open.json", "scenarios/four_food.json", "scenarios/wall.json",   "scenarios/shortcut.json",
+    "scenarios/maze.json", "scenarios/duel.json",      "scenarios/rivals.json",
 };
 constexpr uint32_t SCENARIO_COUNT = sizeof(SCENARIOS) / sizeof(SCENARIOS[0]);
 
@@ -29,8 +28,9 @@ constexpr uint32_t SAMPLES_LADDER[] = {8, 16, 32, 64};
 constexpr float EXPLORER_LADDER[] = {0.0f, 0.1f, 0.3f};
 static_assert(ANT_LADDER[sizeof(ANT_LADDER) / sizeof(ANT_LADDER[0]) - 1] == Samples::ColonyAnts::MAX_ANTS);
 
-constexpr const char* ROW_NAMES[] = {"Scenario",  "Ants",       "Steps/frame", "Follower samples",
-                                     "Explorers", "Collisions", "Drawing"};
+constexpr const char* ROW_NAMES[] = {"Scenario",         "Colonies",  "Ants",       "Steps/frame",
+                                     "Follower samples", "Explorers", "Collisions", "Drawing"};
+static_assert(sizeof(ROW_NAMES) / sizeof(ROW_NAMES[0]) + 1 == Samples::SceneUIColony::LOAD_ROWS);
 
 constexpr ME::Color STATS_TEXT{0.92f, 0.92f, 0.92f, 1.0f};
 constexpr ME::Color STATS_DIM{0.60f, 0.60f, 0.60f, 1.0f};
@@ -203,6 +203,7 @@ void Samples::GameColony::HandleInput(double deltaTime) {
         StartScenario(scenarioIndex);
     }
     if (input.GetKeyPressed(Key::N)) {
+        colonySetting = 0;
         StartScenario((scenarioIndex + 1) % SCENARIO_COUNT);
     }
     if (input.GetKeyPressed(Key::Tab)) {
@@ -278,8 +279,20 @@ void Samples::GameColony::ChangeSelectedRow(int32_t direction) {
     ColonySettings& settings = sim.GetSettings();
     switch (selectedRow) {
         case LoadRow::Scenario:
+            colonySetting = 0;
             StartScenario((scenarioIndex + SCENARIO_COUNT + (direction < 0 ? SCENARIO_COUNT - 1 : 1)) % SCENARIO_COUNT);
             break;
+        case LoadRow::Colonies: {
+            // A new run with one colony fewer or more, keeping the ant target.
+            const uint32_t current = sim.GetWorld().GetColonyCount();
+            const uint32_t next = direction < 0 ? (current > 1 ? current - 1 : 1)
+                                                : (current < ColonyWorld::MAX_COLONIES ? current + 1 : current);
+            if (next != current) {
+                colonySetting = next;
+                StartScenario(scenarioIndex, settings.antTarget);
+            }
+            return;  // StartScenario restarted the timings and the panel
+        }
         case LoadRow::Ants:
             StepAntTarget(direction);
             break;
@@ -317,11 +330,11 @@ void Samples::GameColony::StartScenario(uint32_t index, uint32_t antCount) {
         world.Clear();
         sim.Start(0, 1);
     } else {
-        scenario.Build(world);
+        scenario.Build(world, colonySetting);
         sim.Start(antCount != 0 ? antCount : scenario.ants, scenario.seed);
-        ME::Log("Colony: scenario ", scenario.name, ", ", scenario.wallCount, " walls, ", world.CountFood(), " food, ",
-                sim.GetAnts().GetCount(), " ants, ", scenario.eventCount, " events, ", scenario.steps, " steps, seed ",
-                scenario.seed);
+        ME::Log("Colony: scenario ", scenario.name, ", ", world.GetColonyCount(), " colonies, ", scenario.wallCount,
+                " walls, ", world.CountFood(), " food, ", sim.GetAnts().GetCount(), " ants, ", scenario.eventCount,
+                " events, ", scenario.steps, " steps, seed ", scenario.seed);
     }
     bInvariantLogged = false;
     bHarvestLogged = false;
@@ -332,9 +345,17 @@ void Samples::GameColony::StartScenario(uint32_t index, uint32_t antCount) {
 void Samples::GameColony::StepAntTarget(int32_t direction) {
     ColonySettings& settings = sim.GetSettings();
     settings.antTarget = StepLadder(ANT_LADDER, settings.antTarget, direction);
-    const ColonyNest& nest = sim.GetWorld().GetNest(0);
-    ME::Log("Colony: ant target ", settings.antTarget, " (now ", sim.GetAnts().GetCount(), "; stock ", nest.stock,
-            ", spent ", nest.foodSpent, ", free spawns ", nest.freeSpawns, ")");
+    uint64_t stock = 0;
+    uint64_t spent = 0;
+    uint32_t freeSpawns = 0;
+    for (uint32_t colony = 0; colony < sim.GetWorld().GetColonyCount(); ++colony) {
+        const ColonyNest& nest = sim.GetWorld().GetNest(colony);
+        stock += nest.stock;
+        spent += nest.foodSpent;
+        freeSpawns += nest.freeSpawns;
+    }
+    ME::Log("Colony: ant target ", settings.antTarget, " (now ", sim.GetAnts().GetCount(), "; stock ", stock,
+            ", spent ", spent, ", free spawns ", freeSpawns, ")");
 }
 
 void Samples::GameColony::RefreshLoadPanel() {
@@ -347,6 +368,10 @@ void Samples::GameColony::RefreshLoadPanel() {
         switch (static_cast<LoadRow>(row)) {
             case LoadRow::Scenario:
                 snprintf(value, sizeof(value), "%s", scenario.name);
+                break;
+            case LoadRow::Colonies:
+                snprintf(value, sizeof(value), "%u%s", sim.GetWorld().GetColonyCount(),
+                         sim.IsAIOn() ? " (AI, fights)" : "");
                 break;
             case LoadRow::Ants: {
                 // The target, and the live count while the colony is still growing or shrinking toward it.
@@ -431,6 +456,33 @@ void Samples::GameColony::RefreshStats() {
     }
     snprintf(text, sizeof(text), "ms per step; sprites and engine per frame");
     put(STATS_DIM);
+
+    // Requests: how many were made and applied, and the slowest one's work (the hitch threading would hide).
+    const ColonyRequests& requests = sim.GetRequests();
+    const ColonyRequestStats& walls = requests.GetStats(ColonyRequestKind::WallDistance);
+    const ColonyRequestStats& paths = requests.GetStats(ColonyRequestKind::Path);
+    const ColonyRequestStats& thinks = requests.GetStats(ColonyRequestKind::Think);
+    float slowest = walls.maxMs > paths.maxMs ? walls.maxMs : paths.maxMs;
+    slowest = thinks.maxMs > slowest ? thinks.maxMs : slowest;
+    snprintf(text, sizeof(text), "req wall %u path %u think %u max %.2f ms", walls.applied, paths.applied,
+             thinks.applied, slowest);
+    put(STATS_DIM);
+
+    // One row per colony, blank below the last.
+    const ColonyWorld& world = sim.GetWorld();
+    for (uint32_t colony = 0; colony < ColonyWorld::MAX_COLONIES; ++colony) {
+        if (colony >= world.GetColonyCount()) {
+            text[0] = '\0';
+            put(STATS_DIM);
+            continue;
+        }
+        const ColonyNest& nest = world.GetNest(colony);
+        char count[16];
+        FormatCount(sim.GetAnts().GetCountOf(colony), count, sizeof(count));
+        snprintf(text, sizeof(text), "c%u %s ants %u sol %llu food %u lost", colony, count,
+                 sim.GetAnts().GetSoldiersOf(colony), static_cast<unsigned long long>(nest.stock), nest.losses);
+        put(STATS_TEXT);
+    }
 }
 
 void Samples::GameColony::LogTimings() {
@@ -438,10 +490,11 @@ void Samples::GameColony::LogTimings() {
     const ColonySettings& settings = sim.GetSettings();
     char line[512];
     snprintf(line, sizeof(line),
-             "colony_bench scenario=%s ants=%u spf=%u samples=%u explorers=%d collisions=%d drawing=%d steps=%u "
-             "threads=1",
-             scenario.name, sim.GetAnts().GetCount(), stepsPerFrame, settings.followerSamples,
-             Percent(settings.explorerShare), settings.bCollisions ? 1 : 0, bDrawing ? 1 : 0, summary.stepSamples);
+             "colony_bench scenario=%s colonies=%u ants=%u spf=%u samples=%u explorers=%d collisions=%d drawing=%d "
+             "steps=%u threads=1",
+             scenario.name, sim.GetWorld().GetColonyCount(), sim.GetAnts().GetCount(), stepsPerFrame,
+             settings.followerSamples, Percent(settings.explorerShare), settings.bCollisions ? 1 : 0, bDrawing ? 1 : 0,
+             summary.stepSamples);
     ME::Log(line);
 
     size_t length =
@@ -466,20 +519,37 @@ void Samples::GameColony::LogTimings() {
     }
     ME::Log(line);
 
-    // Food brought home (stored or spent on spawns) per simulated minute since the scenario started.
-    const ColonyNest& nest = sim.GetWorld().GetNest(0);
+    // Food brought home (stored or spent on spawns) per simulated minute since the scenario started, all colonies.
+    const ColonyWorld& world = sim.GetWorld();
+    uint64_t brought = 0;
+    uint32_t losses = 0;
+    for (uint32_t colony = 0; colony < world.GetColonyCount(); ++colony) {
+        brought += world.GetNest(colony).stock + world.GetNest(colony).foodSpent;
+        losses += world.GetNest(colony).losses;
+    }
     const float minutes = static_cast<float>(sim.GetStepIndex()) * ColonySim::STEP_TIME / 60.0f;
-    const float foodPerMinute = minutes > 0.0f ? static_cast<float>(nest.stock + nest.foodSpent) / minutes : 0.0f;
+    const float foodPerMinute = minutes > 0.0f ? static_cast<float>(brought) / minutes : 0.0f;
     const char* failure = sim.GetInvariantFailure();
     const char* invariants = !sim.IsCheckingInvariants() ? "off" : (failure == nullptr ? "ok" : failure);
-    snprintf(line, sizeof(line), "  harvest_step=%d food_per_min=%.0f alive=%u invariants=%s",
+    snprintf(line, sizeof(line), "  harvest_step=%d food_per_min=%.0f alive=%u killed=%u invariants=%s",
              sim.GetHarvestStep() == ColonySim::NO_STEP ? -1 : static_cast<int32_t>(sim.GetHarvestStep()),
-             foodPerMinute, sim.GetAnts().GetCount(), invariants);
+             foodPerMinute, sim.GetAnts().GetCount(), losses, invariants);
+    ME::Log(line);
+
+    // Requests: made, superseded, applied, and the slowest one's work in ms.
+    length = static_cast<size_t>(snprintf(line, sizeof(line), "  requests"));
+    for (uint32_t i = 0; i < COLONY_REQUEST_KINDS && length < sizeof(line); ++i) {
+        const ColonyRequestKind kind = static_cast<ColonyRequestKind>(i);
+        const ColonyRequestStats& entry = sim.GetRequests().GetStats(kind);
+        length += static_cast<size_t>(snprintf(line + length, sizeof(line) - length, " %s=%u/%u/%u max_ms=%.3f",
+                                               GetColonyRequestName(kind), entry.requested, entry.superseded,
+                                               entry.applied, entry.maxMs));
+    }
     ME::Log(line);
 }
 
 void Samples::GameColony::StartBenchmark() {
-    // Every v1 scenario at three loads, then the whole ant ladder on Open.
+    // Every scenario at three loads, then the whole ant ladder on Open.
     constexpr uint32_t SCENARIO_LOADS[] = {2'000, 12'000, 40'000};
     constexpr uint32_t LOAD_COUNT = sizeof(SCENARIO_LOADS) / sizeof(SCENARIO_LOADS[0]);
     constexpr uint32_t LADDER_COUNT = sizeof(ANT_LADDER) / sizeof(ANT_LADDER[0]);
@@ -501,6 +571,7 @@ void Samples::GameColony::StartBenchmark() {
     }
 
     stepsPerFrame = BENCH_STEPS_PER_FRAME;
+    colonySetting = 0;
     benchRun = 0;
     benchStart = Clock::now();
     ME::Log("Colony benchmark: ", benchRunCount, " runs at ", stepsPerFrame, " steps per frame, ", BENCH_STEPS,

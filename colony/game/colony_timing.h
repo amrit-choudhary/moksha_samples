@@ -17,11 +17,13 @@ enum class ColonyTimer : uint8_t {
     Sense,
     Move,
     Claims,
+    Fight,
     Mark,
     Fade,
     Colony,
     ApplySerial,  // Apply's spawns and deaths
     ApplyCopy,    // Apply's prev = now copy
+    Requests,     // background requests: applying results, snapshots, and (inline today) their work
     // Per frame.
     AntSprites,
     CellSprites,
@@ -29,7 +31,7 @@ enum class ColonyTimer : uint8_t {
     Count
 };
 
-constexpr uint32_t COLONY_STEP_TIMERS = 9;  // the timers before AntSprites
+constexpr uint32_t COLONY_STEP_TIMERS = 11;  // the timers before AntSprites
 constexpr uint32_t COLONY_TIMERS = static_cast<uint32_t>(ColonyTimer::Count);
 
 // A short lowercase name, as the design's log format uses ("sense", "apply_serial", ...).

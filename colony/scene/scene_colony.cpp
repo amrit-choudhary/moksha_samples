@@ -16,6 +16,8 @@ static constexpr float CELL_Z = 50.0f;
 static constexpr float ANT_Z = 40.0f;  // in front of the cells
 static constexpr float ANT_LENGTH = 4.0f;
 static constexpr float ANT_WIDTH = 2.0f;
+static constexpr float SOLDIER_LENGTH = 6.0f;
+static constexpr float SOLDIER_WIDTH = 3.0f;
 
 // Colours.
 static constexpr ME::Color GROUND{0.11f, 0.09f, 0.07f, 1.0f};
@@ -28,7 +30,21 @@ static constexpr ME::Color ANT_SEARCHING{0.88f, 0.86f, 0.80f, 1.0f};
 static constexpr ME::Color ANT_CARRYING{0.55f, 1.0f, 0.45f, 1.0f};
 static constexpr ME::Color ANT_EXPLORING{0.50f, 0.72f, 1.0f, 1.0f};  // an explorer, searching
 static constexpr ME::Color ANT_STUCK{1.0f, 0.42f, 0.30f, 1.0f};      // wandering and wiping markers
+static constexpr ME::Color ANT_HIT{1.0f, 1.0f, 1.0f, 1.0f};          // just attacked
+static constexpr ME::Color TO_ENEMY{1.0f, 0.15f, 0.55f, 1.0f};       // any colony's toEnemy markers
+// Per colony: its nest, rally cross, soldiers and (colonies 1-3) workers and trails. Colony 0's workers and trails keep
+// the v1 colours above.
+static constexpr ME::Color COLONY_COLORS[Samples::ColonyWorld::MAX_COLONIES] = {
+    {0.92f, 0.62f, 0.18f, 1.0f},  // amber
+    {0.70f, 0.42f, 1.00f, 1.0f},  // violet
+    {0.20f, 0.85f, 0.85f, 1.0f},  // cyan
+    {1.00f, 0.45f, 0.70f, 1.0f},  // pink
+};
 static constexpr float MARKER_TINT = 0.7f;
+static constexpr float RIVAL_MARKER_TINT = 0.35f;  // colonies 1-3: toHome and toFood together, in the colony's colour
+static constexpr float ENEMY_TINT = 0.6f;
+static constexpr float HIT_FLASH = 0.15f;  // seconds an ant shows ANT_HIT after it attacks
+static constexpr int32_t RALLY_ARM = 3;    // cells from the rally cross's centre to its ends
 static constexpr float FOOD_FULL = 20.0f;  // a cell with this much food or more is drawn at full colour
 static constexpr float FOOD_MIN_TINT = 0.35f;
 
@@ -114,6 +130,7 @@ void Samples::SceneColony::SyncCells(const ColonyWorld& world) {
     instancedSpriteDrawCount0 = ColonyWorld::CELL_COUNT;
     const uint8_t* walls = world.GetWalls();
     const uint16_t* food = world.GetFood();
+    const uint32_t colonyCount = world.GetColonyCount();
     const float* toHome = world.GetToHome(0);
     const float* toFood = world.GetToFood(0);
 
@@ -127,9 +144,23 @@ void Samples::SceneColony::SyncCells(const ColonyWorld& world) {
         } else {
             const float home = toHome[cell] * MARKER_TINT;
             const float found = toFood[cell] * MARKER_TINT;
-            color = ME::Color(Saturate(GROUND.r + TO_HOME.r * home + TO_FOOD.r * found),
-                              Saturate(GROUND.g + TO_HOME.g * home + TO_FOOD.g * found),
-                              Saturate(GROUND.b + TO_HOME.b * home + TO_FOOD.b * found), 1.0f);
+            float r = GROUND.r + TO_HOME.r * home + TO_FOOD.r * found;
+            float g = GROUND.g + TO_HOME.g * home + TO_FOOD.g * found;
+            float b = GROUND.b + TO_HOME.b * home + TO_FOOD.b * found;
+            for (uint32_t colony = 0; colony < colonyCount; ++colony) {
+                const float enemy = world.GetToEnemy(colony)[cell] * ENEMY_TINT;
+                r += TO_ENEMY.r * enemy;
+                g += TO_ENEMY.g * enemy;
+                b += TO_ENEMY.b * enemy;
+                if (colony == 0) {
+                    continue;
+                }
+                const float trail = (world.GetToHome(colony)[cell] + world.GetToFood(colony)[cell]) * RIVAL_MARKER_TINT;
+                r += COLONY_COLORS[colony].r * trail;
+                g += COLONY_COLORS[colony].g * trail;
+                b += COLONY_COLORS[colony].b * trail;
+            }
+            color = ME::Color(Saturate(r), Saturate(g), Saturate(b), 1.0f);
         }
         ME::SpriteRenderer& renderer = instancedSpriteRenderers0[cell];
         renderer.color = color;
@@ -148,7 +179,32 @@ void Samples::SceneColony::SyncCells(const ColonyWorld& world) {
                 const float dx = (static_cast<float>(column) + 0.5f) * ColonyWorld::CELL_SIZE - nest.x;
                 const float dy = (static_cast<float>(row) + 0.5f) * ColonyWorld::CELL_SIZE - nest.y;
                 if (dx * dx + dy * dy <= nest.radius * nest.radius) {
-                    instancedSpriteRenderers0[row * ColonyWorld::GRID_WIDTH + column].color = NEST;
+                    instancedSpriteRenderers0[row * ColonyWorld::GRID_WIDTH + column].color =
+                        colonyCount > 1 ? COLONY_COLORS[colony] : NEST;
+                }
+            }
+        }
+    }
+
+    // Rally points: a cross of cells in the colony's colour, drawn over the open ground.
+    for (uint32_t colony = 0; colony < colonyCount; ++colony) {
+        const ColonyNest& nest = world.GetNest(colony);
+        if (!nest.bRally) {
+            continue;
+        }
+        const int32_t centreColumn = ColonyWorld::ColumnOf(nest.rallyX);
+        const int32_t centreRow = ColonyWorld::RowOf(nest.rallyY);
+        for (int32_t step = -RALLY_ARM; step <= RALLY_ARM; ++step) {
+            const int32_t cells[2][2] = {{centreColumn + step, centreRow}, {centreColumn, centreRow + step}};
+            for (const auto& at : cells) {
+                if (at[0] < 0 || at[0] >= static_cast<int32_t>(ColonyWorld::GRID_WIDTH) || at[1] < 0 ||
+                    at[1] >= static_cast<int32_t>(ColonyWorld::GRID_HEIGHT)) {
+                    continue;
+                }
+                const uint32_t cell =
+                    static_cast<uint32_t>(at[1]) * ColonyWorld::GRID_WIDTH + static_cast<uint32_t>(at[0]);
+                if (walls[cell] == 0) {
+                    instancedSpriteRenderers0[cell].color = COLONY_COLORS[colony];
                 }
             }
         }
@@ -165,17 +221,26 @@ void Samples::SceneColony::SyncAnts(const ColonyAnts& ants) {
             transform.SetScale(0.0f, 0.0f);
             continue;
         }
+        const bool bSoldier = ants.caste[slot] == AntCaste::Soldier;
         transform.SetPosition(left + ants.x[slot], bottom + ants.y[slot], ANT_Z);
         transform.SetRotation(0.0f, 0.0f, ants.heading[slot]);
-        transform.SetScale(ANT_LENGTH, ANT_WIDTH);
+        transform.SetScale(bSoldier ? SOLDIER_LENGTH : ANT_LENGTH, bSoldier ? SOLDIER_WIDTH : ANT_WIDTH);
 
         ME::SpriteRenderer& renderer = instancedSpriteRenderers1[slot];
+        const uint32_t colony = ants.colony[slot];
+        const bool bExplorer = ants.role[slot] == AntRole::Explorer;
         if (ants.stuckTime[slot] > 0.0f) {
             renderer.color = ANT_STUCK;
+        } else if (ants.fightTime[slot] < HIT_FLASH) {
+            renderer.color = ANT_HIT;
+        } else if (bSoldier) {
+            renderer.color = COLONY_COLORS[colony];
         } else if (ants.task[slot] == AntTask::ToHome) {
             renderer.color = ANT_CARRYING;
+        } else if (colony == 0) {
+            renderer.color = bExplorer ? ANT_EXPLORING : ANT_SEARCHING;
         } else {
-            renderer.color = ants.role[slot] == AntRole::Explorer ? ANT_EXPLORING : ANT_SEARCHING;
+            renderer.color = Lerp(COLONY_COLORS[colony], ME::Color::White(), bExplorer ? 0.6f : 0.3f);
         }
         renderer.bDirty = true;
     }

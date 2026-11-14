@@ -1,6 +1,7 @@
 # Colony: design
 
-v1 implemented (2026-11-14); its done-checks and the 70k/100k measurements are open: see [Progress](#16-progress).
+v1 done and checked (2026-11-14); v2 written (2026-11-14), builds and runs (profiled 2026-11-15); its tests and done-checks are open: see
+[Progress](#16-progress).
 A landscape (1280×720) ant colony sample whose job is to be the **test bed for the engine's
 multithreading** (roadmap item 16 and the job system after it). It is built and measured now, on one thread, and run
 again unchanged once threads exist, so the before and after can be compared system by system.
@@ -337,10 +338,12 @@ Each stage is playable or watchable, measured, and checked before the next start
 - Tests: Sense picks the strongest marker; Fade; food is never taken below 0; food is conserved over a run.
 - Done when: lanes form in Open at 2k ants; Wall finishes its harvest; invariants hold over the headless list.
 
-**v2: rivals and background requests.**
+**v2: rivals and background requests.** (written 2026-11-14; what was decided is in section 16)
 - Up to 4 colonies, AI colonies, fights, soldiers, `toEnemy` markers.
 - Wall distance field, path field (rally flags, used by AI), AI think on snapshots, each applied when ready.
 - Maze scenario.
+- Done when: rivals fight and replace their losses in Duel and Rivals, soldiers gather at rally points, Maze's ants
+  find both food sources and use the gap opened at step 36,000, and invariants hold over the headless list.
 
 **v3: the game.**
 - Play mode: tools, caste mix, win (destroy the enemy nests, or most food at the time limit) and lose.
@@ -375,7 +378,7 @@ To check later, not facts:
 
 ## 16. Progress
 
-Last updated 2026-11-14. Everything below is committed (samples `3d63ee3`, engine pin `d3ca148`).
+Last updated 2026-11-14. v1 is committed (samples `ab16687`, engine pin `d3ca148`); v2 is in the working tree.
 
 **Built (v1, in eight steps):** empty sample → world grid, Open scenario, cells drawn → ants with Sense, Move, Claims,
 Mark, Fade, Apply → collisions → Colony with the pending list, population target, Debug invariants → stuck wiping,
@@ -402,24 +405,94 @@ Keys, files and the baseline are in the samples' `CLAUDE.md` (Colony section).
 - Engine change made for the sample: mouse wheel input (`InputManager::GetMouseWheelDelta`, all platforms), used for
   zoom about the pointer; WASD pans. The macOS, iPad, web and Android wheel factors are untested.
 
-**Open, in the order to do them:**
-1. **70k and 100k aren't measured.** Every run starts its ants in a radius-10 disk at the nest, where each ant's 3×3
-   neighbour cells hold the whole colony, so Move is quadratic for the first simulated seconds (single steps of 1 s
-   at 40k, 6.6 s at 100k). The 2 s real-time warm-up ends inside that crowd from 70k up, so those medians (56 and 101
-   ms) include it, and the max step is inflated from 40k up. Options: (A, recommended) spawn the starting population
-   over a disk sized to the count (about 4×4 units per ant) and also require a minimum of simulated warm-up steps
-   (about 300); (B) keep the nest start and warm up until the crowd spreads, which costs minutes per large run. The
-   user hasn't chosen yet. The crowded start may be worth keeping as its own uneven-cost scenario later.
-2. **v1 done-checks** (section 13): lanes form on Open at 2k ants (the user saw the sim work, lanes not confirmed);
-   Wall finishes its harvest (the log prints `harvested at step N`); invariants hold over the headless list (a Debug
-   run of `Sample_Colony_Headless`; slow at 70k+). `Samples_Tests` with the Colony tests hasn't been confirmed run.
-3. **Windowed engine-side numbers:** a Release run of `Sample_Colony` with `[window] vsync=0`, an `L` log at 12k and
-   40k, recorded next to the headless baseline.
-4. `food_per_min` means little in the benchmark's short runs (food is up to 17 s away); harvest and rerouting are
-   checked in the windowed game.
+**Built (v2, in one pass, 2026-11-14):** `MAX_COLONIES` 4 with per-colony live and soldier counts; castes (worker,
+soldier) with energy, attack cooldown and fight time; the Fight system and deaths; `toEnemy` markers; soldier sensing;
+wall avoidance; `colony_requests.*` (wall distance field, path fields, AI think); scenarios Maze, Duel (2 colonies) and
+Rivals (4); the Colonies load row; colony colours, soldiers, rally crosses and attack flashes in the drawing; per-colony
+and request rows in the stats and the log. Tests in `tests/colony_v2_tests.cpp`. Built and run by the user (2026-11-15, RelWithDebInfo,
+profiled at 40k with several colonies); `Samples_Tests` with the v2 tests not yet confirmed.
 
-**Then:** v2 (section 13): up to 4 colonies, fights and soldiers, `toEnemy` markers, background requests (wall
-distance field, path field, AI think on snapshots), the Maze scenario.
+**Decisions made for v2** (beyond the sections above):
+- Population: the Ants setting is the total of all colonies, split evenly (`ColonySettings::TargetOf`, the remainder to
+  the first colonies), so benchmark counts stay exact. Losses are replaced toward the target like any shortfall (v1's
+  rule: paid from the stock when it can be, else free and counted). The game's "spawn every 0.125 s while it has
+  food" (section 4) waits for Play mode (v3).
+- AI is on when the world has more than one colony; every colony is AI in Simulation mode. One colony runs as v1 did:
+  no soldiers, no think requests, and the Fight system isn't called (its search would cost every ant a neighbour scan
+  for nothing). Explorer share stays a load setting; AI think picks only the soldier share and the rally point.
+- Fights (section 4): ants of different colonies within 3 units (collisions keep them about 2 apart) hit the nearest
+  enemy every 1.5 s: workers 1 damage, 3 energy; soldiers 3 damage, 10 energy. A new `Fight` system (after Claims,
+  before Mark, own timer) writes the enemy's energy (the shared-claim case of section 7). Ants at 0 energy are queued
+  as deaths by `CollectDeaths` (serial, inside the Colony timer, counted in the nest's `losses`); a dead ant's food goes
+  back on its cell, so food stays conserved.
+- Soldiers spawn while a colony has fewer than its soldier share of its target (the scenario's `soldiers` at the
+  start, spread through the slots without a random draw; AI think after that), cost 12 food, never forage, and aren't
+  stuck-checked (guarding a rally point stays put on purpose). They chase the nearest enemy within 16 units (through
+  the ant grid, at previous positions), else walk down their path field until 24 units from the rally point, else
+  follow `toEnemy` markers. Any ant that attacked in the last 5 s drops `toEnemy` (1 fading to 0); soldiers drop
+  nothing else. No flee task.
+- Wall avoidance: an ant on a cell next to a wall turns up the wall distance field by up to half its turn rate. This
+  applies to v1 scenarios too, so their numbers move a little (one byte read per ant).
+- Requests (`colony_requests.*`): each job copies its inputs when asked (the wall grid; for think, a snapshot with
+  counts, nests, enemies within 160 units of the nest found through the ant grid, and a copy of the colony's `toEnemy`
+  grid), and has its own result and search queue, so jobs can later run side by side. `RunQueued` does the work at the
+  end of the step; `ApplyReady` applies it at the start of the next. A path request for a colony supersedes one not yet
+  applied (counted); a think is skipped while the last one is unapplied. Walls changing ask for the wall distance field
+  and every rallying colony's path field again; until they arrive the old fields serve. One `requests` timer covers
+  applying, snapshots and the work, so it shows the hitch threading should remove; it isn't counted as serial.
+- AI think (every 30 steps per colony, staggered by 7): soldier share 0.1 + 2 × enemies near the nest / own ants (up
+  to 0.5); rally at the enemies near the nest when there are 5 or more, else at the hottest 8×8-cell block of
+  `toEnemy` (sum at least 4), else at the weakest enemy nest when 1.25× its ants and 200 food in stock, else at the own
+  nest. A point within 32 units of the old one keeps the old one, so the path field isn't searched again for nothing.
+- Drawing: colony 0 keeps v1's colours; colonies 1-3 have violet, cyan and pink (nests, soldiers, workers lightened,
+  trails); `toEnemy` adds pink; rally points are a cross of cells in set 0 (set 1 stays all ants, so section 9's overlay
+  slots weren't needed); an ant that just attacked flashes white; soldiers are drawn larger.
+- Scenarios take `nests` (an array) or `nest`, and `soldiers`. The Colonies row restarts the scenario with 1-4 colonies;
+  extra nests go to fixed corner spots, and walls under any nest are cleared. Maze, Duel and Rivals have guessed food
+  amounts and step counts. The headless list now runs every scenario (30 runs, about half again as long).
+- Timers: `fight` and `requests` join the step timers (11); the log adds `colonies=`, `killed=` and a `requests` line
+  (made/superseded/applied and max ms per kind).
+
+**Known limit, not fixed** (user's call, 2026-11-14: not important): the 70k and 100k medians (56 and 101 ms) are
+wrong. Every run starts its ants in a radius-10 disk at the nest, where each ant's 3×3 neighbour cells hold the whole
+colony, so Move is quadratic for the first simulated seconds (single steps of 1 s at 40k, 6.6 s at 100k), and the 2 s
+real-time warm-up ends inside that crowd from 70k up; the max step is inflated from 40k up. Compare threading on the
+2k-40k runs. If it is wanted later: spawn the starting ants over a disk sized to the count and require a minimum of
+simulated warm-up steps.
+
+**v1 checks:** done by the user (2026-11-14): `Samples_Tests`, lanes on Open at 2k, Wall's harvest, invariants over the
+headless list in Debug.
+
+**Open, in the order to do them:**
+1. **Build the profiling fixes and run `Samples_Tests`** (the new `colony_v2_tests.cpp`, the changed Sense, Fade and
+   Fight tests); profile the same 40k run again with `live-profile` to compare.
+2. **v2 done-checks** (section 13): watch Duel and Rivals (fights, losses replaced, rally crosses moving, soldiers
+   gathering), Maze (both food sources, the gap at step 36,000), the Colonies row on Open; a Debug headless run for
+   the invariants. Tune the AI and fight numbers by eye if the colonies never meet or wipe each other out at once.
+3. **Measure the baseline again** (v2 changed every run a little): the Release headless list, and the windowed Release
+   numbers with `[window] vsync=0` and an `L` log at 12k and 40k.
+4. `food_per_min` means little in the benchmark's short runs; harvest and rerouting are checked in the windowed game.
+
+**Profile (2026-11-15, Windows, RelWithDebInfo built as Release + debug info, a multi-colony run at 40k):** step 93% of
+the frame; Sense 54% (own code 16.5%, `IsRayClear` 6.6%, `CellAt` 5.1%, `Random::Next` 2.5%, CRT trig about 4%), Move
+26% (own code 23%), Fight's `FindEnemy` 14%, engine draw and update 5.6%; AntGrid, Colony and Apply under 1%. At a lower
+count Move and Fight were 17% and 10%: neighbour searches grow faster than the ant count (denser lookups, reads
+scattered across slots). `CellAt`, `IsWall`, `IsRayClear` and `Random::Next` stay real calls: their bodies are in other
+`.cpp` files and there is no link-time optimization.
+
+**Fixes made from it** (2026-11-15, so the threading baseline measures real work, not call overhead and empty
+searches; not yet built or measured): Fight's search runs every `FIGHT_SEARCH_STEPS` (4) steps, staggered by slot (an
+ant reacts within 1/15 s); Sense skips `IsRayClear` when the ant's cell is at least 17 steps from every wall (a ray
+of up to 40 units can't reach one; until the wall distance field arrives, every ray is walked); `ColonyWorld::CellAt`,
+`ColumnOf`, `RowOf`, `IsWall` and `ColonyAntGrid::CellAt` are inline in the header (a multiply and a truncation instead
+of a divide and `floor`); a sample's direction is the heading turned by one of 64 precomputed cone offsets (one cos and
+sin per ant, not per sample); and one random draw gives both the direction (top 6 bits) and the distance (low 24
+bits). Behaviour is the same in kind; the random sequence differs, so runs don't repeat earlier ones. Still on hold,
+likely to matter more once threads share memory bandwidth: copies of neighbour data in grid order made by AntGrid, so
+Move and Fight read neighbours from consecutive memory (section 7's cure). `ME::Random::Next` is still a call into the
+engine library (an engine change, or link-time optimization, would inline it).
+
+**Then:** v3 (section 13): Play mode, map generation behind a loading screen, title screen.
 
 **Working rules for this sample** (from the user): small steps that each build, explained, then stop for review; no
 threading code; no engine changes unless asked (the wheel was asked for); don't build, run, stage or commit unless the

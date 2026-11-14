@@ -1,0 +1,17 @@
+{
+    "name": "duel",
+    "seed": 6,
+    "ants": 4000,
+    "soldiers": 0.1,
+    "steps": 108000,
+    "nests": [
+        { "x": 160, "y": 360, "radius": 20 },
+        { "x": 1120, "y": 360, "radius": 20 }
+    ],
+    "walls": [],
+    "food": [
+        { "x": 640, "y": 360, "radius": 50, "amount": 40 },
+        { "x": 640, "y": 120, "radius": 30, "amount": 20 },
+        { "x": 640, "y": 600, "radius": 30, "amount": 20 }
+    ]
+}

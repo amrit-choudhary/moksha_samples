@@ -7,6 +7,7 @@ moksha_add_game(Sample_Colony
         game_main.cpp
         game/game_colony.cpp
         game/colony_ants.cpp
+        game/colony_requests.cpp
         game/colony_scenario.cpp
         game/colony_step.cpp
         game/colony_systems.cpp

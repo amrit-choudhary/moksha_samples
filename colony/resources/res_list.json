@@ -5,7 +5,10 @@
         "scenarios/open.json",
         "scenarios/four_food.json",
         "scenarios/wall.json",
-        "scenarios/shortcut.json"
+        "scenarios/shortcut.json",
+        "scenarios/maze.json",
+        "scenarios/duel.json",
+        "scenarios/rivals.json"
     ],
     "textures": [
         "textures/colony_cell.png"
